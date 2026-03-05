@@ -1,3 +1,5 @@
+"""fastapi app entrypoint and shared health endpoint."""
+
 from datetime import UTC, datetime
 
 from fastapi import FastAPI

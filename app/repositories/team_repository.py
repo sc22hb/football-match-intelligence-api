@@ -1,3 +1,5 @@
+"""team repository with raw sqlalchemy query methods only."""
+
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 

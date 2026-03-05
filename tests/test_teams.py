@@ -1,3 +1,5 @@
+"""teams endpoint tests for crud, pagination, and errors."""
+
 from fastapi.testclient import TestClient
 
 

@@ -1,3 +1,5 @@
+"""collects and registers all api route modules."""
+
 from fastapi import APIRouter
 
 from app.api.routes.teams import router as teams_router
