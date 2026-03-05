@@ -1,3 +1,5 @@
+"""loads settings from env and exposes cached config."""
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

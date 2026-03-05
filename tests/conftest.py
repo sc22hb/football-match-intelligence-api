@@ -1,3 +1,5 @@
+"""test fixtures and in-memory db setup for api tests."""
+
 from collections.abc import Generator
 
 import pytest

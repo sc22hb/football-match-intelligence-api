@@ -1,3 +1,5 @@
+"""teams http endpoints and response handling."""
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 

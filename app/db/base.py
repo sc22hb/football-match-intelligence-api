@@ -1,3 +1,5 @@
+"""shared sqlalchemy declarative base for all models."""
+
 from sqlalchemy.orm import DeclarativeBase
 
 

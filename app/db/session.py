@@ -1,3 +1,5 @@
+"""creates db engine/session and dependency for routes."""
+
 from collections.abc import Generator
 
 from sqlalchemy import create_engine

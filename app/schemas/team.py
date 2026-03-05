@@ -1,3 +1,5 @@
+"""pydantic schemas for team create/read/update/list payloads."""
+
 from pydantic import BaseModel, ConfigDict, Field
 
 

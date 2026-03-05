@@ -1,3 +1,5 @@
+"""runs alembic migrations using app settings and metadata."""
+
 from logging.config import fileConfig
 
 from alembic import context
@@ -5,7 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
-from app.models import Team  # noqa: F401
+from app.models import Player, Team  # noqa: F401
 
 config = context.config
 

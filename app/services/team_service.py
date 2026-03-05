@@ -1,3 +1,5 @@
+"""team business logic between routes and repository."""
+
 from sqlalchemy.orm import Session
 
 from app.models.team import Team

@@ -1,3 +1,5 @@
+"""shared service-level exceptions for business logic."""
+
 class NotFoundError(Exception):
     pass
 
