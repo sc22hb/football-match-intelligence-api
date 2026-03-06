@@ -1,0 +1,66 @@
+AI DATASET WORKLOG (COURSEWORK EVIDENCE)
+Project: Football Match Intelligence API
+Module: COMP3011
+Maintainer: Haroon Bostan
+
+Purpose
+- Keep a plain-text record of how Generative AI was used for dataset discovery,
+  exploration, import script generation, and validation.
+- This file is intended as evidence for coursework documentation and viva discussion.
+
+How To Use This Log
+- Add one entry per meaningful AI-assisted step.
+- Keep entries short and factual.
+- Include what was accepted/rejected and how you verified it.
+
+Entry Template
+[ENTRY ID]
+Date:
+Goal:
+Prompt/Instruction given to AI:
+AI Output Summary:
+Decision Taken (Accepted / Modified / Rejected):
+Reason:
+Verification Performed:
+Files Changed:
+Notes for Report:
+
+--------------------------------------------------------------------------------
+[PHASE6-ENTRY-001]
+Date: 2026-03-06
+Goal: Start formal AI evidence tracking for dataset integration phase.
+Prompt/Instruction given to AI:
+- User requested a text file to log the AI process for dataset work.
+AI Output Summary:
+- Proposed and created a dedicated .txt worklog with reusable template fields.
+Decision Taken (Accepted / Modified / Rejected):
+- Accepted.
+Reason:
+- Directly supports coursework requirement to demonstrate AI usage process.
+Verification Performed:
+- File created in docs/ and checked in repository tree.
+Files Changed:
+- docs/ai_dataset_worklog.txt
+Notes for Report:
+- Mention this log as process evidence; pair with technical outputs in code/tests.
+
+--------------------------------------------------------------------------------
+[PHASE6-ENTRY-002]
+Date: 2026-03-06
+Goal: Plan dataset import pipeline requirements before coding.
+Prompt/Instruction given to AI:
+- Build reproducible import script from Kaggle football events data.
+- Avoid duplicates; print stats; support sample data for CI.
+AI Output Summary:
+- Broke implementation into: sample CSV schema -> parser -> upsert logic -> stats ->
+  smoke test.
+Decision Taken (Accepted / Modified / Rejected):
+- Accepted (implementation pending in following commits).
+Reason:
+- Matches coursework constraints and incremental commit strategy.
+Verification Performed:
+- Pending (to be recorded in later entries after implementation/tests).
+Files Changed:
+- None yet (planning step).
+Notes for Report:
+- This entry shows AI-assisted decomposition and planning before coding.
