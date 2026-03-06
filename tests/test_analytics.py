@@ -4,6 +4,14 @@ from fastapi.testclient import TestClient
 
 
 
+def _assert_metadata(body: dict[str, object]) -> None:
+    metadata = body["metadata"]
+    assert metadata["data_source"] == "Kaggle"
+    assert metadata["dataset_name"] == "Football Events Dataset"
+    assert metadata["dataset_version"] == "secareanualin-public"
+    assert "computed_at" in metadata
+
+
 def _create_team(client: TestClient, name: str, league: str = "Premier League") -> dict[str, object]:
     response = client.post(
         "/teams",
@@ -94,9 +102,13 @@ def test_team_form_endpoint_returns_expected_metrics(client: TestClient) -> None
     assert body["losses"] == 1
     assert body["points"] == 4
     assert body["form_score"] == 44.44
+    assert "Form score is based on 3 recent matches" in body["explanation_summary"]
     assert len(body["recent_results"]) == 3
     assert body["recent_results"][0]["match_date"] == "2025-08-15"
     assert body["recent_results"][0]["result"] == "L"
+    assert body["recent_results"][0]["points_awarded"] == 0
+    assert body["recent_results"][0]["explanation"] == "Loss contributes 0 points."
+    _assert_metadata(body)
 
 
 
@@ -123,6 +135,7 @@ def test_league_table_endpoint_returns_ranked_table(client: TestClient) -> None:
     assert body["table"][1]["points"] == 3
     assert body["table"][2]["team_name"] == "Team C"
     assert body["table"][2]["points"] == 1
+    _assert_metadata(body)
 
 
 
@@ -153,3 +166,56 @@ def test_top_scorers_endpoint_returns_ranked_players(client: TestClient) -> None
     assert body["top_scorers"][0]["goals"] == 2
     assert body["top_scorers"][1]["player_name"] == "Winger"
     assert body["top_scorers"][1]["goals"] == 1
+    _assert_metadata(body)
+
+
+def test_team_strength_endpoint_returns_ranked_ratings(client: TestClient) -> None:
+    team_a = _create_team(client, "Strength A")
+    team_b = _create_team(client, "Strength B")
+    team_c = _create_team(client, "Strength C")
+
+    _create_match(client, team_a["id"], team_b["id"], 2, 0, "2025-07-01")
+    _create_match(client, team_b["id"], team_c["id"], 1, 0, "2025-07-08")
+    _create_match(client, team_a["id"], team_c["id"], 1, 1, "2025-07-15")
+
+    response = client.get("/analytics/team-strength", params={"season": "2025/26"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["season"] == "2025/26"
+    assert body["base_rating"] == 1500.0
+    assert body["k_factor"] == 32.0
+    assert len(body["teams"]) == 3
+    assert body["teams"][0]["rank"] == 1
+    assert "rating" in body["teams"][0]
+    _assert_metadata(body)
+
+
+def test_player_impact_endpoint_returns_ranked_scores(client: TestClient) -> None:
+    team_home = _create_team(client, "Impact Home")
+    team_away = _create_team(client, "Impact Away")
+
+    player_one = _create_player(client, "Impact One", team_home["id"], "FW")
+    player_two = _create_player(client, "Impact Two", team_away["id"], "FW")
+
+    match = _create_match(client, team_home["id"], team_away["id"], 2, 1, "2025-11-01")
+
+    _create_event(client, match["id"], team_home["id"], player_one["id"], 10, "goal", "Goal")
+    _create_event(client, match["id"], team_home["id"], player_one["id"], 20, "assist", "Assist")
+    _create_event(client, match["id"], team_home["id"], player_one["id"], 30, "shot_on_target", "Shot OT")
+
+    _create_event(client, match["id"], team_away["id"], player_two["id"], 40, "goal", "Goal")
+    _create_event(client, match["id"], team_away["id"], player_two["id"], 50, "yellow_card", "Yellow")
+
+    response = client.get("/analytics/player-impact", params={"season": "2025/26", "limit": 5})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["season"] == "2025/26"
+    assert body["events_considered"] == 5
+    assert len(body["players"]) == 2
+    assert body["players"][0]["player_name"] == "Impact One"
+    assert body["players"][0]["impact_score"] == 15.0
+    assert body["players"][1]["player_name"] == "Impact Two"
+    assert body["players"][1]["impact_score"] == -0.5
+    _assert_metadata(body)
