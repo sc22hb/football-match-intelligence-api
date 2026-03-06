@@ -43,3 +43,18 @@ class LeagueTableResponse(BaseModel):
     season: str | None
     matches_considered: int
     table: list[LeagueTableRow]
+
+
+class TopScorerRow(BaseModel):
+    rank: int
+    player_id: int
+    player_name: str
+    team_id: int
+    team_name: str
+    goals: int
+
+
+class TopScorersResponse(BaseModel):
+    season: str | None
+    events_considered: int
+    top_scorers: list[TopScorerRow]

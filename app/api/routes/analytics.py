@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.analytics import LeagueTableResponse, TeamFormResponse
+from app.schemas.analytics import LeagueTableResponse, TeamFormResponse, TopScorersResponse
 from app.services.analytics_service import AnalyticsService
 from app.services.errors import NotFoundError
 
@@ -34,3 +34,12 @@ def get_league_table(
     db: Session = Depends(get_db),
 ) -> LeagueTableResponse:
     return service.get_league_table(db=db, season=season)
+
+
+@router.get("/top-scorers", response_model=TopScorersResponse)
+def get_top_scorers(
+    season: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> TopScorersResponse:
+    return service.get_top_scorers(db=db, season=season, limit=limit)

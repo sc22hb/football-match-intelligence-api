@@ -5,6 +5,8 @@ from app.schemas.analytics import (
     LeagueTableRow,
     TeamFormMatchResult,
     TeamFormResponse,
+    TopScorerRow,
+    TopScorersResponse,
 )
 from app.schemas.event import EventCreate, EventListResponse, EventRead
 from app.schemas.match import MatchCreate, MatchListResponse, MatchRead, MatchUpdate
@@ -31,4 +33,6 @@ __all__ = [
     "LeagueTableResponse",
     "TeamFormMatchResult",
     "TeamFormResponse",
+    "TopScorerRow",
+    "TopScorersResponse",
 ]
