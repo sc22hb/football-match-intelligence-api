@@ -1,5 +1,6 @@
 """exports pydantic schema classes."""
 
+from app.schemas.event import EventCreate, EventListResponse, EventRead
 from app.schemas.match import MatchCreate, MatchListResponse, MatchRead, MatchUpdate
 from app.schemas.player import PlayerCreate, PlayerListResponse, PlayerRead, PlayerUpdate
 from app.schemas.team import TeamCreate, TeamListResponse, TeamRead, TeamUpdate
@@ -17,4 +18,7 @@ __all__ = [
     "MatchListResponse",
     "MatchRead",
     "MatchUpdate",
+    "EventCreate",
+    "EventListResponse",
+    "EventRead",
 ]

@@ -15,3 +15,4 @@ class Player(Base):
     position: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
 
     team = relationship("Team", back_populates="players")
+    events = relationship("Event", back_populates="player")
