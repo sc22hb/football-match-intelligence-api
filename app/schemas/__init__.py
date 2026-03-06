@@ -5,6 +5,8 @@ from app.schemas.analytics import (
     LeagueTableRow,
     TeamFormMatchResult,
     TeamFormResponse,
+    TeamStrengthResponse,
+    TeamStrengthRow,
     TopScorerRow,
     TopScorersResponse,
 )
@@ -33,6 +35,8 @@ __all__ = [
     "LeagueTableResponse",
     "TeamFormMatchResult",
     "TeamFormResponse",
+    "TeamStrengthRow",
+    "TeamStrengthResponse",
     "TopScorerRow",
     "TopScorersResponse",
 ]

@@ -10,6 +10,10 @@ from app.models.team import Team
 
 
 class AnalyticsRepository:
+    def list_all_teams(self, db: Session) -> list[Team]:
+        stmt: Select[tuple[Team]] = select(Team).order_by(Team.id.asc())
+        return list(db.execute(stmt).scalars().all())
+
     def list_recent_team_matches(self, db: Session, team_id: int, limit: int = 5) -> list[Match]:
         stmt: Select[tuple[Match]] = (
             select(Match)

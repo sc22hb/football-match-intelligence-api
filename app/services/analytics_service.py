@@ -1,13 +1,19 @@
 """service orchestration for analytics endpoints."""
 
 from app.analytics.league_table import calculate_league_table
+from app.analytics.team_strength import calculate_team_strength
 from app.analytics.top_scorers import calculate_top_scorers
 from sqlalchemy.orm import Session
 
 from app.analytics.team_form import calculate_team_form
 from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.team_repository import TeamRepository
-from app.schemas.analytics import LeagueTableResponse, TeamFormResponse, TopScorersResponse
+from app.schemas.analytics import (
+    LeagueTableResponse,
+    TeamFormResponse,
+    TeamStrengthResponse,
+    TopScorersResponse,
+)
 from app.services.errors import NotFoundError
 
 
@@ -37,6 +43,43 @@ class AnalyticsService:
             points=metrics["points"],
             form_score=metrics["form_score"],
             recent_results=metrics["recent_results"],
+        )
+
+    def get_team_strength(self, db: Session, season: str | None = None) -> TeamStrengthResponse:
+        base_rating = 1500.0
+        k_factor = 32.0
+
+        teams = self.repository.list_all_teams(db=db)
+        team_ids = {team.id for team in teams}
+        names_by_id = {team.id: team.name for team in teams}
+
+        matches = self.repository.list_matches(db=db, season=season)
+        ratings = calculate_team_strength(
+            matches=matches,
+            team_ids=team_ids,
+            base_rating=base_rating,
+            k_factor=k_factor,
+        )
+
+        rows = [
+            {
+                "team_id": team_id,
+                "team_name": names_by_id.get(team_id, f"team-{team_id}"),
+                "rating": values["rating"],
+                "matches_played": values["matches_played"],
+            }
+            for team_id, values in ratings.items()
+        ]
+        rows.sort(key=lambda r: (-r["rating"], r["team_id"]))
+
+        for idx, row in enumerate(rows, start=1):
+            row["rank"] = idx
+
+        return TeamStrengthResponse(
+            season=season,
+            base_rating=base_rating,
+            k_factor=k_factor,
+            teams=rows,
         )
 
     def get_league_table(self, db: Session, season: str | None = None) -> LeagueTableResponse:

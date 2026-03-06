@@ -58,3 +58,18 @@ class TopScorersResponse(BaseModel):
     season: str | None
     events_considered: int
     top_scorers: list[TopScorerRow]
+
+
+class TeamStrengthRow(BaseModel):
+    rank: int
+    team_id: int
+    team_name: str
+    rating: float
+    matches_played: int
+
+
+class TeamStrengthResponse(BaseModel):
+    season: str | None
+    base_rating: float
+    k_factor: float
+    teams: list[TeamStrengthRow]
