@@ -1,11 +1,12 @@
 """service orchestration for analytics endpoints."""
 
+from app.analytics.league_table import calculate_league_table
 from sqlalchemy.orm import Session
 
 from app.analytics.team_form import calculate_team_form
 from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.team_repository import TeamRepository
-from app.schemas.analytics import TeamFormResponse
+from app.schemas.analytics import LeagueTableResponse, TeamFormResponse
 from app.services.errors import NotFoundError
 
 
@@ -35,4 +36,26 @@ class AnalyticsService:
             points=metrics["points"],
             form_score=metrics["form_score"],
             recent_results=metrics["recent_results"],
+        )
+
+    def get_league_table(self, db: Session, season: str | None = None) -> LeagueTableResponse:
+        matches = self.repository.list_matches(db=db, season=season)
+        raw_table = calculate_league_table(matches=matches)
+
+        team_ids = {row["team_id"] for row in raw_table}
+        teams = self.repository.list_teams_by_ids(db=db, team_ids=team_ids)
+        names_by_id = {team.id: team.name for team in teams}
+
+        table_rows = [
+            {
+                **row,
+                "team_name": names_by_id.get(row["team_id"], f"team-{row['team_id']}"),
+            }
+            for row in raw_table
+        ]
+
+        return LeagueTableResponse(
+            season=season,
+            matches_considered=len(matches),
+            table=table_rows,
         )

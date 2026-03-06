@@ -1,10 +1,10 @@
 """analytics http endpoints and response handling."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.analytics import TeamFormResponse
+from app.schemas.analytics import LeagueTableResponse, TeamFormResponse
 from app.services.analytics_service import AnalyticsService
 from app.services.errors import NotFoundError
 
@@ -26,3 +26,11 @@ def get_team_form(team_id: int, db: Session = Depends(get_db)) -> TeamFormRespon
             status_code=status.HTTP_404_NOT_FOUND,
             detail=_error_payload("TEAM_NOT_FOUND", str(exc)),
         ) from exc
+
+
+@router.get("/league-table", response_model=LeagueTableResponse)
+def get_league_table(
+    season: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> LeagueTableResponse:
+    return service.get_league_table(db=db, season=season)
