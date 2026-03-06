@@ -23,13 +23,19 @@ def calculate_team_form(matches: list[Match], team_id: int) -> dict[str, object]
             result = "W"
             wins += 1
             points += 3
+            points_awarded = 3
+            explanation = "Win contributes 3 points."
         elif goals_for == goals_against:
             result = "D"
             draws += 1
             points += 1
+            points_awarded = 1
+            explanation = "Draw contributes 1 point."
         else:
             result = "L"
             losses += 1
+            points_awarded = 0
+            explanation = "Loss contributes 0 points."
 
         recent_results.append(
             {
@@ -39,6 +45,8 @@ def calculate_team_form(matches: list[Match], team_id: int) -> dict[str, object]
                 "goals_for": goals_for,
                 "goals_against": goals_against,
                 "result": result,
+                "points_awarded": points_awarded,
+                "explanation": explanation,
             }
         )
 
@@ -52,5 +60,11 @@ def calculate_team_form(matches: list[Match], team_id: int) -> dict[str, object]
         "points": points,
         "matches_considered": match_count,
         "form_score": form_score,
+        "explanation_summary": (
+            f"Form score is based on {match_count} recent matches: "
+            f"{wins}W-{draws}D-{losses}L, {points} points from a maximum of {match_count * 3}."
+            if match_count
+            else "No recent matches found. Form score is 0."
+        ),
         "recent_results": recent_results,
     }

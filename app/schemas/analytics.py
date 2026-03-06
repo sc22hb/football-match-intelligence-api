@@ -1,8 +1,15 @@
 """pydantic schemas for analytics endpoints."""
 
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel
+
+
+class AnalyticsMetadata(BaseModel):
+    data_source: str
+    dataset_name: str
+    dataset_version: str
+    computed_at: datetime
 
 
 class TeamFormMatchResult(BaseModel):
@@ -12,6 +19,8 @@ class TeamFormMatchResult(BaseModel):
     goals_for: int
     goals_against: int
     result: str
+    points_awarded: int
+    explanation: str
 
 
 class TeamFormResponse(BaseModel):
@@ -22,7 +31,9 @@ class TeamFormResponse(BaseModel):
     losses: int
     points: int
     form_score: float
+    explanation_summary: str
     recent_results: list[TeamFormMatchResult]
+    metadata: AnalyticsMetadata
 
 
 class LeagueTableRow(BaseModel):
@@ -43,6 +54,7 @@ class LeagueTableResponse(BaseModel):
     season: str | None
     matches_considered: int
     table: list[LeagueTableRow]
+    metadata: AnalyticsMetadata
 
 
 class TopScorerRow(BaseModel):
@@ -58,3 +70,41 @@ class TopScorersResponse(BaseModel):
     season: str | None
     events_considered: int
     top_scorers: list[TopScorerRow]
+    metadata: AnalyticsMetadata
+
+
+class TeamStrengthRow(BaseModel):
+    rank: int
+    team_id: int
+    team_name: str
+    rating: float
+    matches_played: int
+
+
+class TeamStrengthResponse(BaseModel):
+    season: str | None
+    base_rating: float
+    k_factor: float
+    teams: list[TeamStrengthRow]
+    metadata: AnalyticsMetadata
+
+
+class PlayerImpactRow(BaseModel):
+    rank: int
+    player_id: int
+    player_name: str
+    team_id: int
+    team_name: str
+    goals: int
+    assists: int
+    shots_on_target: int
+    yellow_cards: int
+    red_cards: int
+    impact_score: float
+
+
+class PlayerImpactResponse(BaseModel):
+    season: str | None
+    events_considered: int
+    players: list[PlayerImpactRow]
+    metadata: AnalyticsMetadata

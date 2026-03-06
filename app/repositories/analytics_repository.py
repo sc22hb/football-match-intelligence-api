@@ -10,6 +10,10 @@ from app.models.team import Team
 
 
 class AnalyticsRepository:
+    def list_all_teams(self, db: Session) -> list[Team]:
+        stmt: Select[tuple[Team]] = select(Team).order_by(Team.id.asc())
+        return list(db.execute(stmt).scalars().all())
+
     def list_recent_team_matches(self, db: Session, team_id: int, limit: int = 5) -> list[Match]:
         stmt: Select[tuple[Match]] = (
             select(Match)
@@ -44,6 +48,12 @@ class AnalyticsRepository:
             .where(func.lower(Event.event_type) == "goal")
             .order_by(Event.id.asc())
         )
+        if season is not None:
+            stmt = stmt.where(Match.season == season)
+        return list(db.execute(stmt).scalars().all())
+
+    def list_events(self, db: Session, season: str | None = None) -> list[Event]:
+        stmt: Select[tuple[Event]] = select(Event).join(Match, Match.id == Event.match_id).order_by(Event.id.asc())
         if season is not None:
             stmt = stmt.where(Match.season == season)
         return list(db.execute(stmt).scalars().all())
