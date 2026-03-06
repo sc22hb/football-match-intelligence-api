@@ -1,15 +1,21 @@
 """service orchestration for analytics endpoints."""
 
+from datetime import UTC, datetime
+
+from app.analytics.player_impact import calculate_player_impact
 from app.analytics.league_table import calculate_league_table
 from app.analytics.team_strength import calculate_team_strength
 from app.analytics.top_scorers import calculate_top_scorers
 from sqlalchemy.orm import Session
 
 from app.analytics.team_form import calculate_team_form
+from app.core.config import get_settings
 from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.team_repository import TeamRepository
 from app.schemas.analytics import (
+    AnalyticsMetadata,
     LeagueTableResponse,
+    PlayerImpactResponse,
     TeamFormResponse,
     TeamStrengthResponse,
     TopScorersResponse,
@@ -25,6 +31,7 @@ class AnalyticsService:
     ) -> None:
         self.repository = repository or AnalyticsRepository()
         self.team_repository = team_repository or TeamRepository()
+        self.settings = get_settings()
 
     def get_team_form(self, db: Session, team_id: int) -> TeamFormResponse:
         team = self.team_repository.get_by_id(db=db, team_id=team_id)
@@ -44,6 +51,7 @@ class AnalyticsService:
             form_score=metrics["form_score"],
             explanation_summary=metrics["explanation_summary"],
             recent_results=metrics["recent_results"],
+            metadata=self._metadata(),
         )
 
     def get_team_strength(self, db: Session, season: str | None = None) -> TeamStrengthResponse:
@@ -81,6 +89,7 @@ class AnalyticsService:
             base_rating=base_rating,
             k_factor=k_factor,
             teams=rows,
+            metadata=self._metadata(),
         )
 
     def get_league_table(self, db: Session, season: str | None = None) -> LeagueTableResponse:
@@ -103,6 +112,7 @@ class AnalyticsService:
             season=season,
             matches_considered=len(matches),
             table=table_rows,
+            metadata=self._metadata(),
         )
 
     def get_top_scorers(self, db: Session, season: str | None = None, limit: int = 10) -> TopScorersResponse:
@@ -130,4 +140,41 @@ class AnalyticsService:
             season=season,
             events_considered=len(goal_events),
             top_scorers=top_rows,
+            metadata=self._metadata(),
+        )
+
+    def get_player_impact(self, db: Session, season: str | None = None, limit: int = 20) -> PlayerImpactResponse:
+        events = self.repository.list_events(db=db, season=season)
+        ranked = calculate_player_impact(events=events)[:limit]
+
+        player_ids = {row["player_id"] for row in ranked}
+        team_ids = {row["team_id"] for row in ranked}
+        players = self.repository.list_players_by_ids(db=db, player_ids=player_ids)
+        teams = self.repository.list_teams_by_ids(db=db, team_ids=team_ids)
+
+        player_names = {player.id: player.name for player in players}
+        team_names = {team.id: team.name for team in teams}
+
+        rows = [
+            {
+                **row,
+                "player_name": player_names.get(row["player_id"], f"player-{row['player_id']}"),
+                "team_name": team_names.get(row["team_id"], f"team-{row['team_id']}"),
+            }
+            for row in ranked
+        ]
+
+        return PlayerImpactResponse(
+            season=season,
+            events_considered=len(events),
+            players=rows,
+            metadata=self._metadata(),
+        )
+
+    def _metadata(self) -> AnalyticsMetadata:
+        return AnalyticsMetadata(
+            data_source=self.settings.data_source,
+            dataset_name=self.settings.dataset_name,
+            dataset_version=self.settings.dataset_version,
+            computed_at=datetime.now(UTC),
         )

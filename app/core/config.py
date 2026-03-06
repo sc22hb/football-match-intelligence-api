@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/football_api"
     )
+    data_source: str = "Kaggle"
+    dataset_name: str = "Football Events Dataset"
+    dataset_version: str = "secareanualin-public"
 
     model_config = SettingsConfigDict(
         env_file=".env",

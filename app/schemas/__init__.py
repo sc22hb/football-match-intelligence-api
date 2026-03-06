@@ -1,8 +1,11 @@
 """exports pydantic schema classes."""
 
 from app.schemas.analytics import (
+    AnalyticsMetadata,
     LeagueTableResponse,
     LeagueTableRow,
+    PlayerImpactResponse,
+    PlayerImpactRow,
     TeamFormMatchResult,
     TeamFormResponse,
     TeamStrengthResponse,
@@ -31,8 +34,11 @@ __all__ = [
     "EventCreate",
     "EventListResponse",
     "EventRead",
+    "AnalyticsMetadata",
     "LeagueTableRow",
     "LeagueTableResponse",
+    "PlayerImpactRow",
+    "PlayerImpactResponse",
     "TeamFormMatchResult",
     "TeamFormResponse",
     "TeamStrengthRow",

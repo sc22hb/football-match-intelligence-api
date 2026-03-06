@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.analytics import (
     LeagueTableResponse,
+    PlayerImpactResponse,
     TeamFormResponse,
     TeamStrengthResponse,
     TopScorersResponse,
@@ -56,3 +57,12 @@ def get_top_scorers(
     db: Session = Depends(get_db),
 ) -> TopScorersResponse:
     return service.get_top_scorers(db=db, season=season, limit=limit)
+
+
+@router.get("/player-impact", response_model=PlayerImpactResponse)
+def get_player_impact(
+    season: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> PlayerImpactResponse:
+    return service.get_player_impact(db=db, season=season, limit=limit)

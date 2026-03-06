@@ -51,3 +51,9 @@ class AnalyticsRepository:
         if season is not None:
             stmt = stmt.where(Match.season == season)
         return list(db.execute(stmt).scalars().all())
+
+    def list_events(self, db: Session, season: str | None = None) -> list[Event]:
+        stmt: Select[tuple[Event]] = select(Event).join(Match, Match.id == Event.match_id).order_by(Event.id.asc())
+        if season is not None:
+            stmt = stmt.where(Match.season == season)
+        return list(db.execute(stmt).scalars().all())
