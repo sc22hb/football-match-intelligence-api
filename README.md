@@ -4,17 +4,8 @@ Data-driven football analytics API built with FastAPI, SQLAlchemy, and PostgreSQ
 
 ## Current Status
 
-- `Phase 0` complete: foundation + health check + SQLAlchemy config + pytest scaffold
-- `Phase 1` in progress: Team model, migration, CRUD API, and tests
-
-## Project Overview
-
-The project provides football data management and analytics endpoints with a layered architecture:
-
-- API routes (HTTP layer)
-- Services (business logic)
-- Repositories (database access only)
-- Database (PostgreSQL + Alembic migrations)
+- Phase 0 to Phase 5 complete (foundation, CRUD models, analytics endpoints, tests)
+- Phase 6 in progress (dataset import pipeline and documentation)
 
 ## Tech Stack
 
@@ -26,38 +17,38 @@ The project provides football data management and analytics endpoints with a lay
 - Pytest
 - PostgreSQL
 
+## Architecture
+
+- API Routes -> Services -> Repositories -> Database
+- Analytics calculations implemented under `app/analytics/`
+
 ## Quick Start (Local PostgreSQL)
 
-### 1) Prerequisites
-
-- Python 3.11
-- PostgreSQL 16 (running locally)
-
-### 2) Configure environment
+1. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-### 3) Install dependencies
+2. Install dependencies
 
 ```bash
 python3 -m pip install -e .
 ```
 
-### 4) Apply database migrations
+3. Apply migrations
 
 ```bash
 python3 -m alembic upgrade head
 ```
 
-### 5) Run the API
+4. Run API
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API docs are available at:
+OpenAPI docs:
 
 - `http://127.0.0.1:8000/docs`
 - `http://127.0.0.1:8000/redoc`
@@ -68,29 +59,73 @@ API docs are available at:
 python3 -m pytest -q
 ```
 
-## Implemented Endpoints (Current)
+## Implemented Endpoints
+
+Health
 
 - `GET /health`
+
+Teams CRUD
+
 - `POST /teams`
 - `GET /teams`
 - `GET /teams/{team_id}`
 - `PUT /teams/{team_id}`
 - `DELETE /teams/{team_id}`
 
+Players CRUD
+
+- `POST /players`
+- `GET /players`
+- `GET /players/{player_id}`
+- `PUT /players/{player_id}`
+- `DELETE /players/{player_id}`
+
+Matches CRUD
+
+- `POST /matches`
+- `GET /matches`
+- `GET /matches/{match_id}`
+- `PUT /matches/{match_id}`
+- `DELETE /matches/{match_id}`
+
+Events
+
+- `POST /events`
+- `GET /events`
+
+Analytics
+
+- `GET /analytics/team-form/{team_id}`
+- `GET /analytics/league-table`
+- `GET /analytics/top-scorers`
+
+## Dataset Integration
+
+Target dataset:
+
+- Football Events Dataset (Kaggle) by `secareanualin`
+
+The full dataset is not committed. A reproducible sample is available in `data/sample/`.
+
+Import command (sample):
+
+```bash
+python3 scripts/import_football_events.py --dataset-dir data/sample
+```
+
+Useful options:
+
+- `--dry-run` to validate input without persisting
+- `--database-url` to target a specific DB
+
+## Dataset Documentation
+
+- `docs/dataset_exploration.md`
+- `docs/ai_dataset_worklog.txt`
+
 ## Coursework Roadmap
 
-- Phase 2: Players
-- Phase 3: Matches
-- Phase 4: Events
-- Phase 5: Basic analytics
-- Phase 6: Kaggle dataset import
-- Phase 7: Advanced analytics
-- Phase 8: Documentation polish + report notes
-
-## Dataset Plan
-
-Target dataset for integration:
-
-- Football Events Dataset by `secareanualin` (Kaggle)
-
-Citation details and import notes will be added in `docs/dataset_exploration.md` and `docs/research_notes.md`.
+- Phase 6: dataset import + citation docs + smoke test
+- Phase 7: advanced analytics (team strength, explainable form, player impact)
+- Phase 8: research/report documentation and final polish

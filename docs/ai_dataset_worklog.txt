@@ -1,0 +1,114 @@
+AI DATASET WORKLOG (COURSEWORK EVIDENCE)
+Project: Football Match Intelligence API
+Module: COMP3011
+Maintainer: Haroon Bostan
+
+Purpose
+- Keep a plain-text record of how Generative AI was used for dataset discovery,
+  exploration, import script generation, and validation.
+- This file is intended as evidence for coursework documentation and viva discussion.
+
+How To Use This Log
+- Add one entry per meaningful AI-assisted step.
+- Keep entries short and factual.
+- Include what was accepted/rejected and how you verified it.
+
+Entry Template
+[ENTRY ID]
+Date:
+Goal:
+Prompt/Instruction given to AI:
+AI Output Summary:
+Decision Taken (Accepted / Modified / Rejected):
+Reason:
+Verification Performed:
+Files Changed:
+Notes for Report:
+
+--------------------------------------------------------------------------------
+[PHASE6-ENTRY-001]
+Date: 2026-03-06
+Goal: Start formal AI evidence tracking for dataset integration phase.
+Prompt/Instruction given to AI:
+- User requested a text file to log the AI process for dataset work.
+AI Output Summary:
+- Proposed and created a dedicated .txt worklog with reusable template fields.
+Decision Taken (Accepted / Modified / Rejected):
+- Accepted.
+Reason:
+- Directly supports coursework requirement to demonstrate AI usage process.
+Verification Performed:
+- File created in docs/ and checked in repository tree.
+Files Changed:
+- docs/ai_dataset_worklog.txt
+Notes for Report:
+- Mention this log as process evidence; pair with technical outputs in code/tests.
+
+--------------------------------------------------------------------------------
+[PHASE6-ENTRY-002]
+Date: 2026-03-06
+Goal: Plan dataset import pipeline requirements before coding.
+Prompt/Instruction given to AI:
+- Build reproducible import script from Kaggle football events data.
+- Avoid duplicates; print stats; support sample data for CI.
+AI Output Summary:
+- Broke implementation into: sample CSV schema -> parser -> upsert logic -> stats ->
+  smoke test.
+Decision Taken (Accepted / Modified / Rejected):
+- Accepted (implementation pending in following commits).
+Reason:
+- Matches coursework constraints and incremental commit strategy.
+Verification Performed:
+- Pending (to be recorded in later entries after implementation/tests).
+Files Changed:
+- None yet (planning step).
+Notes for Report:
+- This entry shows AI-assisted decomposition and planning before coding.
+
+--------------------------------------------------------------------------------
+[PHASE6-ENTRY-003]
+Date: 2026-03-06
+Goal: Build import script and sample CSV dataset for reproducible ingestion.
+Prompt/Instruction given to AI:
+- Implement scripts/import_football_events.py.
+- Parse teams/players/matches/events CSV files.
+- Avoid duplicates and print import statistics.
+- Keep full Kaggle data out of git; use sample data in data/sample.
+AI Output Summary:
+- Generated idempotent import pipeline with duplicate checks and per-entity stats.
+- Added sample CSV files for CI/local testing.
+Decision Taken (Accepted / Modified / Rejected):
+- Accepted with minor refactor for database-url session handling.
+Reason:
+- Meets Phase 6 functional requirements and reproducibility constraints.
+Verification Performed:
+- Compile checks and project test suite pass after introducing script/data.
+Files Changed:
+- scripts/import_football_events.py
+- data/sample/teams.csv
+- data/sample/players.csv
+- data/sample/matches.csv
+- data/sample/events.csv
+Notes for Report:
+- Highlight idempotency and statistics output as evidence of robust pipeline design.
+
+--------------------------------------------------------------------------------
+[PHASE6-ENTRY-004]
+Date: 2026-03-06
+Goal: Add dataset citation and exploration documentation.
+Prompt/Instruction given to AI:
+- Create docs explaining source dataset, mapping, assumptions, limitations.
+AI Output Summary:
+- Produced dataset_exploration.md with citation, mapping table, quality rules, and
+  reproducibility steps.
+Decision Taken (Accepted / Modified / Rejected):
+- Accepted.
+Reason:
+- Satisfies coursework requirement for citation and import explanation.
+Verification Performed:
+- Documentation reviewed and linked from README.
+Files Changed:
+- docs/dataset_exploration.md
+- README.md
+Notes for Report:
+- Cite this file as dataset methodology appendix.
