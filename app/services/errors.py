@@ -6,3 +6,7 @@ class NotFoundError(Exception):
 
 class ConflictError(Exception):
     pass
+
+
+class ServiceValidationError(Exception):
+    pass
