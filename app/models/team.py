@@ -25,3 +25,4 @@ class Team(Base):
         foreign_keys="Match.away_team_id",
         back_populates="away_team",
     )
+    events = relationship("Event", back_populates="team")
