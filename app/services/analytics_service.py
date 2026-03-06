@@ -42,6 +42,7 @@ class AnalyticsService:
             losses=metrics["losses"],
             points=metrics["points"],
             form_score=metrics["form_score"],
+            explanation_summary=metrics["explanation_summary"],
             recent_results=metrics["recent_results"],
         )
 

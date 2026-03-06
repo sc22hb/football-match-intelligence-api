@@ -12,6 +12,8 @@ class TeamFormMatchResult(BaseModel):
     goals_for: int
     goals_against: int
     result: str
+    points_awarded: int
+    explanation: str
 
 
 class TeamFormResponse(BaseModel):
@@ -22,6 +24,7 @@ class TeamFormResponse(BaseModel):
     losses: int
     points: int
     form_score: float
+    explanation_summary: str
     recent_results: list[TeamFormMatchResult]
 
 
