@@ -1,57 +1,85 @@
 # Football Match Intelligence API
 
-Data-driven football analytics API built with FastAPI, SQLAlchemy, and PostgreSQL for COMP3011 coursework.
+Production-style FastAPI coursework project for COMP3011.
 
-## Current Status
+It delivers CRUD APIs on football domain models, SQL-backed persistence, advanced analytics endpoints, reproducible dataset import, and provenance-aware analytics output.
 
-- Phase 0 to Phase 5 complete (foundation, CRUD models, analytics endpoints, tests)
-- Phase 6 in progress (dataset import pipeline and documentation)
+## Project Overview
 
-## Tech Stack
-
-- Python 3.11
-- FastAPI
-- SQLAlchemy 2.0
-- Alembic
-- Pydantic
-- Pytest
-- PostgreSQL
+- Framework: FastAPI (Python 3.11)
+- Persistence: SQLAlchemy 2.0 + Alembic migrations + PostgreSQL
+- Validation/serialization: Pydantic
+- Testing: Pytest
+- Dataset integration: Kaggle Football Events Dataset (`secareanualin`)
 
 ## Architecture
 
-- API Routes -> Services -> Repositories -> Database
-- Analytics calculations implemented under `app/analytics/`
+Layered architecture is enforced:
 
-## Quick Start (Local PostgreSQL)
+`API Routes -> Services -> Repositories -> Database`
 
-1. Configure environment
+```mermaid
+flowchart LR
+  A[API Routes] --> B[Services]
+  B --> C[Repositories]
+  C --> D[(PostgreSQL)]
+  B --> E[Analytics Module]
+```
+
+Repository layer is the only layer that performs database queries.
+
+## Core Features
+
+- Full CRUD for `Team`, `Player`, and `Match`
+- Event ingestion endpoints (`create`, `list`)
+- Pagination support on list endpoints (`skip`, `limit`)
+- Structured error responses and HTTP status handling (`201`, `204`, `404`, `409`, `422`)
+- Analytics endpoints with provenance metadata:
+  - `data_source`
+  - `dataset_name`
+  - `dataset_version`
+  - `computed_at`
+
+## Setup Instructions
+
+## 1) Prerequisites
+
+- Python `3.11.x`
+- PostgreSQL (local install or managed host)
+
+## 2) Clone and configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-2. Install dependencies
+Edit `.env` if your DB host/user/password differ.
+
+## 3) Install dependencies
 
 ```bash
-python3 -m pip install -e .
+python3 -m pip install -e .[dev]
 ```
 
-3. Apply migrations
+## 4) Create database and run migrations
+
+Example (local postgres user):
 
 ```bash
+createdb football_api
 python3 -m alembic upgrade head
 ```
 
-4. Run API
+## 5) Run API
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-OpenAPI docs:
+Docs:
 
-- `http://127.0.0.1:8000/docs`
-- `http://127.0.0.1:8000/redoc`
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
 
 ## Running Tests
 
@@ -59,13 +87,19 @@ OpenAPI docs:
 python3 -m pytest -q
 ```
 
-## Implemented Endpoints
+Optional sanity compile:
 
-Health
+```bash
+python3 -m compileall app
+```
+
+## API Endpoints
+
+## Health
 
 - `GET /health`
 
-Teams CRUD
+## Teams CRUD
 
 - `POST /teams`
 - `GET /teams`
@@ -73,7 +107,7 @@ Teams CRUD
 - `PUT /teams/{team_id}`
 - `DELETE /teams/{team_id}`
 
-Players CRUD
+## Players CRUD
 
 - `POST /players`
 - `GET /players`
@@ -81,7 +115,7 @@ Players CRUD
 - `PUT /players/{player_id}`
 - `DELETE /players/{player_id}`
 
-Matches CRUD
+## Matches CRUD
 
 - `POST /matches`
 - `GET /matches`
@@ -89,43 +123,136 @@ Matches CRUD
 - `PUT /matches/{match_id}`
 - `DELETE /matches/{match_id}`
 
-Events
+## Events
 
 - `POST /events`
 - `GET /events`
 
-Analytics
+## Analytics
 
-- `GET /analytics/team-form/{team_id}`
+- `GET /analytics/team-form/{team_id}` (explainable form score)
 - `GET /analytics/league-table`
 - `GET /analytics/top-scorers`
+- `GET /analytics/team-strength` (ELO-style rating)
+- `GET /analytics/player-impact`
+
+### Player impact metric
+
+Implemented as:
+
+`impact_score = (goals*5) * (assists*3) * (shots_on_target*1) - (yellow_cards*0.5) - (red_cards*2)`
+
+## Structured Error Response
+
+Example:
+
+```json
+{
+  "detail": {
+    "error": {
+      "code": "TEAM_NOT_FOUND",
+      "message": "Team with id 999 not found"
+    }
+  }
+}
+```
 
 ## Dataset Integration
 
-Target dataset:
+Dataset used:
 
-- Football Events Dataset (Kaggle) by `secareanualin`
+- Name: Football Events Dataset
+- Author: secareanualin
+- Platform: Kaggle
 
-The full dataset is not committed. A reproducible sample is available in `data/sample/`.
+Reference:
 
-Import command (sample):
+- https://www.kaggle.com/datasets/secareanualin/football-events
+
+Important:
+
+- Full Kaggle dataset is not committed.
+- Small reproducible subset is under `data/sample/`.
+
+### Import dataset
+
+Dry-run (validation only):
+
+```bash
+python3 scripts/import_football_events.py --dataset-dir data/sample --dry-run
+```
+
+Commit import:
 
 ```bash
 python3 scripts/import_football_events.py --dataset-dir data/sample
 ```
 
-Useful options:
+Script behavior:
 
-- `--dry-run` to validate input without persisting
-- `--database-url` to target a specific DB
+- Parses CSV input (`teams`, `players`, `matches`, `events`)
+- Validates references between entities
+- Skips duplicates (idempotent re-runs)
+- Prints per-entity import statistics
 
-## Dataset Documentation
+## OpenAPI Export
 
-- `docs/dataset_exploration.md`
-- `docs/ai_dataset_worklog.txt`
+OpenAPI JSON export command:
 
-## Coursework Roadmap
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+from app.main import app
 
-- Phase 6: dataset import + citation docs + smoke test
-- Phase 7: advanced analytics (team strength, explainable form, player impact)
-- Phase 8: research/report documentation and final polish
+Path("docs").mkdir(exist_ok=True)
+Path("docs/openapi_export.json").write_text(json.dumps(app.openapi(), indent=2), encoding="utf-8")
+print("Exported docs/openapi_export.json")
+PY
+```
+
+PDF conversion command (when a converter is available, e.g., `pandoc`):
+
+```bash
+pandoc docs/openapi_export.json -o docs/openapi_export.pdf
+```
+
+## Oral Demo Script (Suggested)
+
+1. Start API
+
+```bash
+uvicorn app.main:app --reload
+```
+
+2. Health check
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+3. Create teams
+
+```bash
+curl -X POST http://127.0.0.1:8000/teams -H "Content-Type: application/json" -d '{"name":"Arsenal","league":"Premier League","country":"England"}'
+curl -X POST http://127.0.0.1:8000/teams -H "Content-Type: application/json" -d '{"name":"Chelsea","league":"Premier League","country":"England"}'
+```
+
+4. Create players and a match, then add events (Swagger UI is fastest for IDs)
+
+5. Show analytics
+
+```bash
+curl "http://127.0.0.1:8000/analytics/team-form/1"
+curl "http://127.0.0.1:8000/analytics/league-table"
+curl "http://127.0.0.1:8000/analytics/team-strength"
+curl "http://127.0.0.1:8000/analytics/top-scorers"
+curl "http://127.0.0.1:8000/analytics/player-impact"
+```
+
+## References
+
+- FastAPI: https://fastapi.tiangolo.com/
+- SQLAlchemy 2.0: https://docs.sqlalchemy.org/en/20/
+- Alembic: https://alembic.sqlalchemy.org/
+- Kaggle dataset: https://www.kaggle.com/datasets/secareanualin/football-events
