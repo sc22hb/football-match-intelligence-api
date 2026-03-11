@@ -1,6 +1,7 @@
 """test fixtures and in-memory db setup for api tests."""
 
 from collections.abc import Generator
+import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,8 +9,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+# Force stable test settings even when a local .env exists.
+os.environ["API_KEY"] = "dev-api-key"
+
 from app.db.base import Base
 from app.models.fixture import Fixture  # noqa: F401
+from app.core.config import get_settings
 from app.core.security import reset_rate_limiter_state
 from app.db.session import get_db
 from app.main import app
@@ -22,6 +27,8 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, class_=Session)
+
+get_settings.cache_clear()
 
 
 @pytest.fixture

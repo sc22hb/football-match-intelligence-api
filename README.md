@@ -130,6 +130,10 @@ python3 -m compileall app
 - `POST /events`
 - `GET /events`
 
+## Fixtures
+
+- `GET /fixtures`
+
 ## Analytics
 
 - `GET /analytics/team-form/{team_id}` (explainable form score)
@@ -138,7 +142,8 @@ python3 -m compileall app
 - `GET /analytics/most-assists`
 - `GET /analytics/team-strength` (ELO-style rating)
 - `GET /analytics/player-impact`
-- `GET /analytics/clutch-impact` (context-weighted high-pressure impact)
+- `GET /analytics/clutch-impact` (points won by decisive goals/assists)
+- `GET /analytics/fixture-predictions`
 
 ## Authentication
 
@@ -221,6 +226,49 @@ Script behavior:
 - Validates references between entities
 - Skips duplicates (idempotent re-runs)
 - Prints per-entity import statistics
+
+## Render Deployment
+
+This repo now includes a Render blueprint at [`render.yaml`](/Users/haroonbostan/football-api-cwk/football-match-intelligence-api/render.yaml).
+
+It provisions:
+
+- one Python web service
+- one PostgreSQL database
+- automatic migrations on deploy
+- automatic import of `data/premier_league_2025_26`
+
+### Deploy steps
+
+1. Push the repo to GitHub.
+2. In Render, choose `New +` -> `Blueprint`.
+3. Connect this repository.
+4. Review the generated services from `render.yaml`.
+5. Create the blueprint.
+
+Render will then:
+
+- install dependencies with `pip install ".[dev]"`
+- run `alembic upgrade head`
+- import the Premier League dataset
+- start the API with `uvicorn`
+
+### Important environment variables
+
+These are configured by the blueprint:
+
+- `DATABASE_URL`
+- `API_KEY`
+- `ENVIRONMENT`
+- `RATE_LIMIT_WINDOW_SECONDS`
+- `RATE_LIMIT_MAX_REQUESTS`
+
+### Notes
+
+- The app normalizes Render Postgres URLs to the SQLAlchemy `postgresql+psycopg://` format automatically.
+- The service health check uses `/health`.
+- After deploy, the frontend is available at the root path `/`.
+- Swagger UI is available at `/docs`.
 
 ## OpenAPI Export
 

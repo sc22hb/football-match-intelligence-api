@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: football-match-intelligence-api
+    runtime: python
+    plan: free
+    healthCheckPath: /health
+    buildCommand: pip install ".[dev]"
+    preDeployCommand: alembic upgrade head && python3 scripts/import_football_events.py --dataset-dir data/premier_league_2025_26
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: football-match-intelligence-db
+          property: connectionString
+      - key: API_KEY
+        generateValue: true
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "30"
+
+databases:
+  - name: football-match-intelligence-db
+    databaseName: football_api
+    user: football_api_user
