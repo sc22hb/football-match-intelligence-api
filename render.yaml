@@ -5,8 +5,7 @@ services:
     plan: free
     healthCheckPath: /health
     buildCommand: pip install ".[dev]"
-    preDeployCommand: alembic upgrade head && python3 scripts/import_football_events.py --dataset-dir data/premier_league_2025_26
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: bash scripts/render_start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
