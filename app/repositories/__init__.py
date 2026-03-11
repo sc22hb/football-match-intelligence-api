@@ -2,6 +2,7 @@
 
 from app.repositories.event_repository import EventRepository
 from app.repositories.analytics_repository import AnalyticsRepository
+from app.repositories.fixture_repository import FixtureRepository
 from app.repositories.match_repository import MatchRepository
 from app.repositories.player_repository import PlayerRepository
 from app.repositories.team_repository import TeamRepository
@@ -11,5 +12,6 @@ __all__ = [
     "PlayerRepository",
     "MatchRepository",
     "EventRepository",
+    "FixtureRepository",
     "AnalyticsRepository",
 ]

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
+from app.models.fixture import Fixture  # noqa: F401
 from app.core.security import reset_rate_limiter_state
 from app.db.session import get_db
 from app.main import app
@@ -45,3 +46,12 @@ def client() -> Generator[TestClient, None, None]:
 
     reset_rate_limiter_state()
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def db_session() -> Generator[Session, None, None]:
+    db = TestSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

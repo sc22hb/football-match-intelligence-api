@@ -10,7 +10,7 @@ It delivers CRUD APIs on football domain models, SQL-backed persistence, advance
 - Persistence: SQLAlchemy 2.0 + Alembic migrations + PostgreSQL
 - Validation/serialization: Pydantic
 - Testing: Pytest
-- Dataset integration: Kaggle Football Events Dataset (`secareanualin`)
+- Dataset integration: Fantasy Premier League API scrape for Premier League 2025/26
 
 ## Architecture
 
@@ -135,6 +135,7 @@ python3 -m compileall app
 - `GET /analytics/team-form/{team_id}` (explainable form score)
 - `GET /analytics/league-table`
 - `GET /analytics/top-scorers`
+- `GET /analytics/most-assists`
 - `GET /analytics/team-strength` (ELO-style rating)
 - `GET /analytics/player-impact`
 - `GET /analytics/clutch-impact` (context-weighted high-pressure impact)
@@ -159,7 +160,7 @@ Write endpoints also have in-memory rate limiting controlled by:
 
 Implemented as:
 
-`impact_score = (goals*5) * (assists*3) * (shots_on_target*1) - (yellow_cards*0.5) - (red_cards*2)`
+`impact_score = (goals*5) + (assists*3) + (shots_on_target*1) + (saves*0.2) - (yellow_cards*0.5) - (red_cards*2)`
 
 ## Structured Error Response
 
@@ -180,31 +181,38 @@ Example:
 
 Dataset used:
 
-- Name: Football Events Dataset
-- Author: secareanualin
-- Platform: Kaggle
-
-Reference:
-
-- https://www.kaggle.com/datasets/secareanualin/football-events
+- Name: Premier League 2025/26
+- Source: Fantasy Premier League API
+- Scope: Premier League teams, players, finished fixtures, and per-fixture player-stat-derived event rows
 
 Important:
 
-- Full Kaggle dataset is not committed.
-- Small reproducible subset is under `data/sample/`.
+- Scraped dataset output is written to `data/premier_league_2025_26/`.
+- Small reproducible subset for tests remains under `data/sample/`.
+
+### Scrape dataset
+
+Generate a fresh Premier League dataset:
+
+```bash
+python3 scripts/scrape_premier_league_2025_26.py
+```
+
+The scraper builds `events.csv` from each player's per-fixture `element-summary` history,
+which makes goals and assists match-specific rather than gameweek-aggregated.
 
 ### Import dataset
 
 Dry-run (validation only):
 
 ```bash
-python3 scripts/import_football_events.py --dataset-dir data/sample --dry-run
+python3 scripts/import_football_events.py --dataset-dir data/premier_league_2025_26 --dry-run
 ```
 
 Commit import:
 
 ```bash
-python3 scripts/import_football_events.py --dataset-dir data/sample
+python3 scripts/import_football_events.py --dataset-dir data/premier_league_2025_26
 ```
 
 Script behavior:
@@ -266,6 +274,7 @@ curl "http://127.0.0.1:8000/analytics/team-form/1"
 curl "http://127.0.0.1:8000/analytics/league-table"
 curl "http://127.0.0.1:8000/analytics/team-strength"
 curl "http://127.0.0.1:8000/analytics/top-scorers"
+curl "http://127.0.0.1:8000/analytics/most-assists"
 curl "http://127.0.0.1:8000/analytics/player-impact"
 ```
 
@@ -274,4 +283,4 @@ curl "http://127.0.0.1:8000/analytics/player-impact"
 - FastAPI: https://fastapi.tiangolo.com/
 - SQLAlchemy 2.0: https://docs.sqlalchemy.org/en/20/
 - Alembic: https://alembic.sqlalchemy.org/
-- Kaggle dataset: https://www.kaggle.com/datasets/secareanualin/football-events
+- FPL API: https://fantasy.premierleague.com/api/bootstrap-static/

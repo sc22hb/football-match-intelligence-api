@@ -3,8 +3,10 @@
 from datetime import UTC, datetime
 
 from app.analytics.clutch_impact import ClutchEventContext, calculate_clutch_impact
+from app.analytics.fixture_predictions import predict_fixture
 from app.analytics.player_impact import calculate_player_impact
 from app.analytics.league_table import calculate_league_table
+from app.analytics.most_assists import calculate_most_assists
 from app.analytics.team_strength import calculate_team_strength
 from app.analytics.top_scorers import calculate_top_scorers
 from sqlalchemy.orm import Session
@@ -16,7 +18,9 @@ from app.repositories.team_repository import TeamRepository
 from app.schemas.analytics import (
     AnalyticsMetadata,
     ClutchImpactResponse,
+    FixturePredictionsResponse,
     LeagueTableResponse,
+    MostAssistsResponse,
     PlayerImpactResponse,
     TeamFormResponse,
     TeamStrengthResponse,
@@ -145,6 +149,75 @@ class AnalyticsService:
             metadata=self._metadata(),
         )
 
+    def get_most_assists(self, db: Session, season: str | None = None, limit: int = 10) -> MostAssistsResponse:
+        assist_events = self.repository.list_assist_events(db=db, season=season)
+        ranked = calculate_most_assists(events=assist_events)[:limit]
+
+        player_ids = {row["player_id"] for row in ranked}
+        team_ids = {row["team_id"] for row in ranked}
+        players = self.repository.list_players_by_ids(db=db, player_ids=player_ids)
+        teams = self.repository.list_teams_by_ids(db=db, team_ids=team_ids)
+
+        player_names = {player.id: player.name for player in players}
+        team_names = {team.id: team.name for team in teams}
+
+        rows = [
+            {
+                **row,
+                "player_name": player_names.get(row["player_id"], f"player-{row['player_id']}"),
+                "team_name": team_names.get(row["team_id"], f"team-{row['team_id']}"),
+            }
+            for row in ranked
+        ]
+
+        return MostAssistsResponse(
+            season=season,
+            events_considered=len(assist_events),
+            most_assists=rows,
+            metadata=self._metadata(),
+        )
+
+    def get_fixture_predictions(
+        self,
+        db: Session,
+        season: str | None = None,
+        limit: int = 20,
+    ) -> FixturePredictionsResponse:
+        fixtures = self.repository.list_fixtures(db=db, season=season)[:limit]
+        matches = self.repository.list_matches(db=db, season=season)
+        teams = self.repository.list_all_teams(db=db)
+
+        team_ids = {team.id for team in teams}
+        team_names = {team.id: team.name for team in teams}
+        ratings = calculate_team_strength(matches=matches, team_ids=team_ids)
+        rating_by_team = {team_id: values["rating"] for team_id, values in ratings.items()}
+        recent_matches_by_team = {
+            team.id: self.repository.list_recent_team_matches(db=db, team_id=team.id, limit=5)
+            for team in teams
+        }
+
+        rows = []
+        for fixture in fixtures:
+            prediction = predict_fixture(
+                fixture=fixture,
+                ratings=rating_by_team,
+                recent_matches_by_team=recent_matches_by_team,
+            )
+            rows.append(
+                {
+                    **prediction,
+                    "home_team_name": team_names.get(fixture.home_team_id, f"team-{fixture.home_team_id}"),
+                    "away_team_name": team_names.get(fixture.away_team_id, f"team-{fixture.away_team_id}"),
+                }
+            )
+
+        return FixturePredictionsResponse(
+            season=season,
+            fixtures_considered=len(rows),
+            predictions=rows,
+            metadata=self._metadata(),
+        )
+
     def get_player_impact(self, db: Session, season: str | None = None, limit: int = 20) -> PlayerImpactResponse:
         events = self.repository.list_events(db=db, season=season)
         ranked = calculate_player_impact(events=events)[:limit]
@@ -176,11 +249,6 @@ class AnalyticsService:
     def get_clutch_impact(self, db: Session, season: str | None = None, limit: int = 20) -> ClutchImpactResponse:
         events = self.repository.list_events(db=db, season=season)
         matches = self.repository.list_matches(db=db, season=season)
-        teams = self.repository.list_all_teams(db=db)
-
-        team_ids = {team.id for team in teams}
-        team_ratings = calculate_team_strength(matches=matches, team_ids=team_ids)
-        rating_by_team = {team_id: values["rating"] for team_id, values in team_ratings.items()}
         match_by_id = {match.id: match for match in matches}
 
         contexts: list[ClutchEventContext] = []
@@ -192,18 +260,16 @@ class AnalyticsService:
             if event.team_id == match.home_team_id:
                 goals_for = match.home_score
                 goals_against = match.away_score
-                opponent_team_id = match.away_team_id
             else:
                 goals_for = match.away_score
                 goals_against = match.home_score
-                opponent_team_id = match.home_team_id
 
             if goals_for < goals_against:
-                game_state = "losing"
+                points_awarded = 0
             elif goals_for == goals_against:
-                game_state = "drawing"
+                points_awarded = 1
             else:
-                game_state = "winning"
+                points_awarded = 3
 
             contexts.append(
                 ClutchEventContext(
@@ -212,12 +278,11 @@ class AnalyticsService:
                     match_id=event.match_id,
                     minute=event.minute,
                     event_type=event.event_type,
-                    opponent_team_id=opponent_team_id,
-                    game_state=game_state,
+                    points_awarded=points_awarded,
                 )
             )
 
-        ranked = calculate_clutch_impact(event_contexts=contexts, team_ratings=rating_by_team)[:limit]
+        ranked = calculate_clutch_impact(event_contexts=contexts)[:limit]
 
         player_ids = {row["player_id"] for row in ranked}
         team_ids = {row["team_id"] for row in ranked}
@@ -240,8 +305,9 @@ class AnalyticsService:
             season=season,
             events_considered=len(events),
             methodology=(
-                "Score = base_event_value * minute_weight * game_state_weight * opponent_strength_weight. "
-                "Weights emphasize late minutes, difficult game state, and stronger opponents."
+                "Clutch score is based on points won from goal and assist contributions only. "
+                "Goals carry full weight and assists carry reduced weight, with each player's share "
+                "taken from the team's final points in that match."
             ),
             players=rows,
             metadata=self._metadata(),

@@ -2,8 +2,10 @@
 
 from app.schemas.analytics import (
     AnalyticsMetadata,
+    FixturePredictionsResponse,
     LeagueTableResponse,
     LeagueTableRow,
+    MostAssistsResponse,
     PlayerImpactResponse,
     PlayerImpactRow,
     TeamFormMatchResult,
@@ -13,6 +15,7 @@ from app.schemas.analytics import (
     TopScorerRow,
     TopScorersResponse,
 )
+from app.schemas.fixture import FixtureListResponse, FixtureRead
 from app.schemas.event import EventCreate, EventListResponse, EventRead
 from app.schemas.match import MatchCreate, MatchListResponse, MatchRead, MatchUpdate
 from app.schemas.player import PlayerCreate, PlayerListResponse, PlayerRead, PlayerUpdate
@@ -35,8 +38,12 @@ __all__ = [
     "EventListResponse",
     "EventRead",
     "AnalyticsMetadata",
+    "FixturePredictionsResponse",
+    "FixtureRead",
+    "FixtureListResponse",
     "LeagueTableRow",
     "LeagueTableResponse",
+    "MostAssistsResponse",
     "PlayerImpactRow",
     "PlayerImpactResponse",
     "TeamFormMatchResult",

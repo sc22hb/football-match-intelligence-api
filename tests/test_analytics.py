@@ -6,9 +6,9 @@ from fastapi.testclient import TestClient
 
 def _assert_metadata(body: dict[str, object]) -> None:
     metadata = body["metadata"]
-    assert metadata["data_source"] == "Kaggle"
-    assert metadata["dataset_name"] == "Football Events Dataset"
-    assert metadata["dataset_version"] == "secareanualin-public"
+    assert metadata["data_source"] == "Fantasy Premier League API"
+    assert metadata["dataset_name"] == "Premier League 2025/26"
+    assert metadata["dataset_version"] == "fpl-element-summary-live"
     assert "computed_at" in metadata
 
 
@@ -169,6 +169,33 @@ def test_top_scorers_endpoint_returns_ranked_players(client: TestClient) -> None
     _assert_metadata(body)
 
 
+def test_most_assists_endpoint_returns_ranked_players(client: TestClient) -> None:
+    home_team = _create_team(client, "Assist Home")
+    away_team = _create_team(client, "Assist Away")
+
+    playmaker = _create_player(client, "Playmaker", home_team["id"], "AM")
+    winger = _create_player(client, "Creator", away_team["id"], "RW")
+
+    match = _create_match(client, home_team["id"], away_team["id"], 2, 2, "2025-10-08")
+
+    _create_event(client, match["id"], home_team["id"], playmaker["id"], 25, "assist", "Cross")
+    _create_event(client, match["id"], home_team["id"], playmaker["id"], 60, "assist", "Through ball")
+    _create_event(client, match["id"], away_team["id"], winger["id"], 72, "assist", "Cutback")
+
+    response = client.get("/analytics/most-assists", params={"season": "2025/26", "limit": 2})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["season"] == "2025/26"
+    assert body["events_considered"] == 3
+    assert len(body["most_assists"]) == 2
+    assert body["most_assists"][0]["player_name"] == "Playmaker"
+    assert body["most_assists"][0]["assists"] == 2
+    assert body["most_assists"][1]["player_name"] == "Creator"
+    assert body["most_assists"][1]["assists"] == 1
+    _assert_metadata(body)
+
+
 def test_team_strength_endpoint_returns_ranked_ratings(client: TestClient) -> None:
     team_a = _create_team(client, "Strength A")
     team_b = _create_team(client, "Strength B")
@@ -215,9 +242,9 @@ def test_player_impact_endpoint_returns_ranked_scores(client: TestClient) -> Non
     assert body["events_considered"] == 5
     assert len(body["players"]) == 2
     assert body["players"][0]["player_name"] == "Impact One"
-    assert body["players"][0]["impact_score"] == 15.0
+    assert body["players"][0]["impact_score"] == 9.0
     assert body["players"][1]["player_name"] == "Impact Two"
-    assert body["players"][1]["impact_score"] == -0.5
+    assert body["players"][1]["impact_score"] == 4.5
     _assert_metadata(body)
 
 
@@ -246,10 +273,11 @@ def test_clutch_impact_endpoint_returns_explainable_ranking(client: TestClient) 
     body = response.json()
     assert body["season"] == "2025/26"
     assert body["events_considered"] == 2
-    assert "minute_weight" in body["methodology"]
-    assert len(body["players"]) == 2
-    assert body["players"][0]["player_name"] == "Clutch Home Player"
-    assert body["players"][0]["clutch_impact_score"] > body["players"][1]["clutch_impact_score"]
+    assert "points won from goal and assist contributions only" in body["methodology"]
+    assert len(body["players"]) == 1
+    assert body["players"][0]["player_name"] == "Clutch Away Player"
     assert len(body["players"][0]["top_contributions"]) >= 1
+    assert body["players"][0]["top_contributions"][0]["points_awarded"] == 3
+    assert body["players"][0]["top_contributions"][0]["event_type"] == "goal"
     assert "reason" in body["players"][0]["top_contributions"][0]
     _assert_metadata(body)

@@ -2,6 +2,7 @@
 
 from app.services.analytics_service import AnalyticsService
 from app.services.event_service import EventService
+from app.services.fixture_service import FixtureService
 from app.services.match_service import MatchService
 from app.services.player_service import PlayerService
 from app.services.team_service import TeamService
@@ -11,5 +12,6 @@ __all__ = [
     "PlayerService",
     "MatchService",
     "EventService",
+    "FixtureService",
     "AnalyticsService",
 ]

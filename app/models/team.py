@@ -25,4 +25,14 @@ class Team(Base):
         foreign_keys="Match.away_team_id",
         back_populates="away_team",
     )
+    home_fixtures = relationship(
+        "Fixture",
+        foreign_keys="Fixture.home_team_id",
+        back_populates="home_team",
+    )
+    away_fixtures = relationship(
+        "Fixture",
+        foreign_keys="Fixture.away_team_id",
+        back_populates="away_team",
+    )
     events = relationship("Event", back_populates="team")

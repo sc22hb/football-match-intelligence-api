@@ -73,6 +73,44 @@ class TopScorersResponse(BaseModel):
     metadata: AnalyticsMetadata
 
 
+class MostAssistsRow(BaseModel):
+    rank: int
+    player_id: int
+    player_name: str
+    team_id: int
+    team_name: str
+    assists: int
+
+
+class MostAssistsResponse(BaseModel):
+    season: str | None
+    events_considered: int
+    most_assists: list[MostAssistsRow]
+    metadata: AnalyticsMetadata
+
+
+class FixturePredictionRow(BaseModel):
+    fixture_id: int
+    fixture_date: date
+    home_team_id: int
+    home_team_name: str
+    away_team_id: int
+    away_team_name: str
+    home_win_probability: float
+    draw_probability: float
+    away_win_probability: float
+    predicted_home_goals: float
+    predicted_away_goals: float
+    explanation: str
+
+
+class FixturePredictionsResponse(BaseModel):
+    season: str | None
+    fixtures_considered: int
+    predictions: list[FixturePredictionRow]
+    metadata: AnalyticsMetadata
+
+
 class TeamStrengthRow(BaseModel):
     rank: int
     team_id: int
@@ -98,6 +136,7 @@ class PlayerImpactRow(BaseModel):
     goals: int
     assists: int
     shots_on_target: int
+    saves: int
     yellow_cards: int
     red_cards: int
     impact_score: float
@@ -112,12 +151,9 @@ class PlayerImpactResponse(BaseModel):
 
 class ClutchImpactContribution(BaseModel):
     match_id: int
-    minute: int
     event_type: str
-    base_value: float
-    minute_weight: float
-    game_state_weight: float
-    opponent_strength_weight: float
+    weight: float
+    points_awarded: int
     contribution: float
     reason: str
 
