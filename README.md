@@ -55,6 +55,8 @@ cp .env.example .env
 
 Edit `.env` if your DB host/user/password differ.
 
+Set `API_KEY` in `.env` for protected write endpoints.
+
 ## 3) Install dependencies
 
 ```bash
@@ -135,6 +137,23 @@ python3 -m compileall app
 - `GET /analytics/top-scorers`
 - `GET /analytics/team-strength` (ELO-style rating)
 - `GET /analytics/player-impact`
+- `GET /analytics/clutch-impact` (context-weighted high-pressure impact)
+
+## Authentication
+
+Write endpoints require `X-API-Key` header:
+
+```bash
+curl -X POST http://127.0.0.1:8000/teams \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: dev-api-key" \
+  -d '{"name":"Arsenal","league":"Premier League","country":"England"}'
+```
+
+Write endpoints also have in-memory rate limiting controlled by:
+
+- `RATE_LIMIT_WINDOW_SECONDS`
+- `RATE_LIMIT_MAX_REQUESTS`
 
 ### Player impact metric
 

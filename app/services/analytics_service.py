@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 
+from app.analytics.clutch_impact import ClutchEventContext, calculate_clutch_impact
 from app.analytics.player_impact import calculate_player_impact
 from app.analytics.league_table import calculate_league_table
 from app.analytics.team_strength import calculate_team_strength
@@ -14,6 +15,7 @@ from app.repositories.analytics_repository import AnalyticsRepository
 from app.repositories.team_repository import TeamRepository
 from app.schemas.analytics import (
     AnalyticsMetadata,
+    ClutchImpactResponse,
     LeagueTableResponse,
     PlayerImpactResponse,
     TeamFormResponse,
@@ -167,6 +169,80 @@ class AnalyticsService:
         return PlayerImpactResponse(
             season=season,
             events_considered=len(events),
+            players=rows,
+            metadata=self._metadata(),
+        )
+
+    def get_clutch_impact(self, db: Session, season: str | None = None, limit: int = 20) -> ClutchImpactResponse:
+        events = self.repository.list_events(db=db, season=season)
+        matches = self.repository.list_matches(db=db, season=season)
+        teams = self.repository.list_all_teams(db=db)
+
+        team_ids = {team.id for team in teams}
+        team_ratings = calculate_team_strength(matches=matches, team_ids=team_ids)
+        rating_by_team = {team_id: values["rating"] for team_id, values in team_ratings.items()}
+        match_by_id = {match.id: match for match in matches}
+
+        contexts: list[ClutchEventContext] = []
+        for event in events:
+            match = match_by_id.get(event.match_id)
+            if match is None:
+                continue
+
+            if event.team_id == match.home_team_id:
+                goals_for = match.home_score
+                goals_against = match.away_score
+                opponent_team_id = match.away_team_id
+            else:
+                goals_for = match.away_score
+                goals_against = match.home_score
+                opponent_team_id = match.home_team_id
+
+            if goals_for < goals_against:
+                game_state = "losing"
+            elif goals_for == goals_against:
+                game_state = "drawing"
+            else:
+                game_state = "winning"
+
+            contexts.append(
+                ClutchEventContext(
+                    player_id=event.player_id,
+                    team_id=event.team_id,
+                    match_id=event.match_id,
+                    minute=event.minute,
+                    event_type=event.event_type,
+                    opponent_team_id=opponent_team_id,
+                    game_state=game_state,
+                )
+            )
+
+        ranked = calculate_clutch_impact(event_contexts=contexts, team_ratings=rating_by_team)[:limit]
+
+        player_ids = {row["player_id"] for row in ranked}
+        team_ids = {row["team_id"] for row in ranked}
+        players = self.repository.list_players_by_ids(db=db, player_ids=player_ids)
+        teams = self.repository.list_teams_by_ids(db=db, team_ids=team_ids)
+
+        player_names = {player.id: player.name for player in players}
+        team_names = {team.id: team.name for team in teams}
+
+        rows = [
+            {
+                **row,
+                "player_name": player_names.get(row["player_id"], f"player-{row['player_id']}"),
+                "team_name": team_names.get(row["team_id"], f"team-{row['team_id']}"),
+            }
+            for row in ranked
+        ]
+
+        return ClutchImpactResponse(
+            season=season,
+            events_considered=len(events),
+            methodology=(
+                "Score = base_event_value * minute_weight * game_state_weight * opponent_strength_weight. "
+                "Weights emphasize late minutes, difficult game state, and stronger opponents."
+            ),
             players=rows,
             metadata=self._metadata(),
         )

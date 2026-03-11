@@ -219,3 +219,37 @@ def test_player_impact_endpoint_returns_ranked_scores(client: TestClient) -> Non
     assert body["players"][1]["player_name"] == "Impact Two"
     assert body["players"][1]["impact_score"] == -0.5
     _assert_metadata(body)
+
+
+def test_clutch_impact_endpoint_returns_explainable_ranking(client: TestClient) -> None:
+    team_home = _create_team(client, "Clutch Home")
+    team_away = _create_team(client, "Clutch Away")
+
+    player_home = _create_player(client, "Clutch Home Player", team_home["id"], "FW")
+    player_away = _create_player(client, "Clutch Away Player", team_away["id"], "FW")
+
+    match = _create_match(
+        client,
+        team_home["id"],
+        team_away["id"],
+        home_score=1,
+        away_score=2,
+        match_date="2025-12-01",
+    )
+
+    _create_event(client, match["id"], team_home["id"], player_home["id"], 88, "goal", "Late goal")
+    _create_event(client, match["id"], team_away["id"], player_away["id"], 20, "goal", "Early goal")
+
+    response = client.get("/analytics/clutch-impact", params={"season": "2025/26", "limit": 5})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["season"] == "2025/26"
+    assert body["events_considered"] == 2
+    assert "minute_weight" in body["methodology"]
+    assert len(body["players"]) == 2
+    assert body["players"][0]["player_name"] == "Clutch Home Player"
+    assert body["players"][0]["clutch_impact_score"] > body["players"][1]["clutch_impact_score"]
+    assert len(body["players"][0]["top_contributions"]) >= 1
+    assert "reason" in body["players"][0]["top_contributions"][0]
+    _assert_metadata(body)

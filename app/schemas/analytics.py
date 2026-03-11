@@ -108,3 +108,34 @@ class PlayerImpactResponse(BaseModel):
     events_considered: int
     players: list[PlayerImpactRow]
     metadata: AnalyticsMetadata
+
+
+class ClutchImpactContribution(BaseModel):
+    match_id: int
+    minute: int
+    event_type: str
+    base_value: float
+    minute_weight: float
+    game_state_weight: float
+    opponent_strength_weight: float
+    contribution: float
+    reason: str
+
+
+class ClutchImpactRow(BaseModel):
+    rank: int
+    player_id: int
+    player_name: str
+    team_id: int
+    team_name: str
+    events_count: int
+    clutch_impact_score: float
+    top_contributions: list[ClutchImpactContribution]
+
+
+class ClutchImpactResponse(BaseModel):
+    season: str | None
+    events_considered: int
+    methodology: str
+    players: list[ClutchImpactRow]
+    metadata: AnalyticsMetadata
