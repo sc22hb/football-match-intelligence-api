@@ -273,10 +273,11 @@ def test_clutch_impact_endpoint_returns_explainable_ranking(client: TestClient) 
     body = response.json()
     assert body["season"] == "2025/26"
     assert body["events_considered"] == 2
-    assert "minutes played as a late-involvement proxy" in body["methodology"]
-    assert len(body["players"]) == 2
-    assert body["players"][0]["player_name"] == "Clutch Home Player"
-    assert body["players"][0]["clutch_impact_score"] > body["players"][1]["clutch_impact_score"]
+    assert "points won from goal and assist contributions only" in body["methodology"]
+    assert len(body["players"]) == 1
+    assert body["players"][0]["player_name"] == "Clutch Away Player"
     assert len(body["players"][0]["top_contributions"]) >= 1
+    assert body["players"][0]["top_contributions"][0]["points_awarded"] == 3
+    assert body["players"][0]["top_contributions"][0]["event_type"] == "goal"
     assert "reason" in body["players"][0]["top_contributions"][0]
     _assert_metadata(body)

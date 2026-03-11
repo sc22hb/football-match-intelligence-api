@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Football Match Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+
+    <!-- ===== Top Header Bar ===== -->
+    <header class="top-bar">
+      <div class="top-bar-inner">
+        <div class="brand">
+          <h1 class="brand-title">Match Intelligence</h1>
+          <p class="brand-sub">Premier League Analytics Dashboard</p>
+        </div>
+        <div class="controls">
+          <div class="control-group">
+            <label class="control-label" for="season-input">Season</label>
+            <input id="season-input" class="control-input" type="text" value="2025/26" placeholder="2025/26">
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="api-key">API Key</label>
+            <input id="api-key" class="control-input" type="password" placeholder="Enter key">
+          </div>
+          <button id="save-settings" class="btn btn-outline" type="button">Save</button>
+          <button id="refresh-all" class="btn btn-primary" type="button">
+            <svg class="btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 8a7 7 0 0 1 13-3.5M15 8a7 7 0 0 1-13 3.5"/><path d="M14 1v4h-4M2 15v-4h4"/></svg>
+            Refresh All
+          </button>
+        </div>
+        <p id="global-status" class="status-text">Ready</p>
+      </div>
+    </header>
+
+    <main class="dashboard">
+
+      <!-- ===== Analytics Section ===== -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Analytics</h2>
+          <span class="section-badge">Live</span>
+        </div>
+
+        <!-- League table LEFT, 2x2 analytics RIGHT -->
+        <div class="analytics-layout">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">League Table</h3>
+              <button class="btn btn-ghost btn-sm" data-analytics="league-table" type="button">Reload</button>
+            </div>
+            <div id="league-table" class="panel-body"></div>
+          </div>
+
+          <div class="analytics-right">
+            <div class="panel">
+              <div class="panel-header">
+                <h3 class="panel-title">Top Scorers</h3>
+                <button class="btn btn-ghost btn-sm" data-analytics="top-scorers" type="button">Reload</button>
+              </div>
+              <div id="top-scorers" class="panel-body"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3 class="panel-title">Most Assists</h3>
+                <button class="btn btn-ghost btn-sm" data-analytics="most-assists" type="button">Reload</button>
+              </div>
+              <div id="most-assists" class="panel-body"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3 class="panel-title">Player Impact</h3>
+                <button class="btn btn-ghost btn-sm" data-analytics="player-impact" type="button">Reload</button>
+              </div>
+              <div id="player-impact" class="panel-body"></div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3 class="panel-title">Clutch Impact</h3>
+                <button class="btn btn-ghost btn-sm" data-analytics="clutch-impact" type="button">Reload</button>
+              </div>
+              <div id="clutch-impact" class="panel-body"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Data Workspace ===== -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Data Workspace</h2>
+          <span class="section-badge">CRUD</span>
+        </div>
+
+        <!-- Teams & Players side by side -->
+        <div class="workspace-row">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Teams</h3>
+              <button id="reload-teams" class="btn btn-ghost btn-sm" type="button">Reload</button>
+            </div>
+            <div class="panel-body">
+              <form id="team-form" class="form form-inline">
+                <div class="form-row">
+                  <label class="form-label">Team Name</label>
+                  <input name="name" type="text" placeholder="e.g. Arsenal" required>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">League</label>
+                  <input name="league" type="text" value="Premier League" required>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Country</label>
+                  <input name="country" type="text" value="England" required>
+                </div>
+                <button class="btn btn-primary" type="submit">Create Team</button>
+              </form>
+              <div id="teams-list" class="resource-list"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Players</h3>
+              <button id="reload-players" class="btn btn-ghost btn-sm" type="button">Reload</button>
+            </div>
+            <div class="panel-body">
+              <form id="player-form" class="form form-inline">
+                <div class="form-row">
+                  <label class="form-label">Player Name</label>
+                  <input name="name" type="text" placeholder="e.g. Bukayo Saka" required>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Team</label>
+                  <select id="player-team-id" name="team_id" required></select>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">Position</label>
+                  <input name="position" type="text" value="MID" required>
+                </div>
+                <button class="btn btn-primary" type="submit">Create Player</button>
+              </form>
+              <div id="players-list" class="resource-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matches full width below -->
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-header">
+            <h3 class="panel-title">Matches</h3>
+            <button id="reload-matches" class="btn btn-ghost btn-sm" type="button">Reload</button>
+          </div>
+          <div class="panel-body">
+            <form id="match-form" class="form form-inline">
+              <div class="form-row">
+                <label class="form-label">Home</label>
+                <select id="match-home-team-id" name="home_team_id" required></select>
+              </div>
+              <div class="form-row">
+                <label class="form-label">Away</label>
+                <select id="match-away-team-id" name="away_team_id" required></select>
+              </div>
+              <div class="form-row form-row-narrow">
+                <label class="form-label">Home Score</label>
+                <input name="home_score" type="number" min="0" value="0" required>
+              </div>
+              <div class="form-row form-row-narrow">
+                <label class="form-label">Away Score</label>
+                <input name="away_score" type="number" min="0" value="0" required>
+              </div>
+              <div class="form-row">
+                <label class="form-label">Date</label>
+                <input name="match_date" type="date" required>
+              </div>
+              <div class="form-row form-row-narrow">
+                <label class="form-label">Season</label>
+                <input name="season" type="text" value="2025/26" required>
+              </div>
+              <button class="btn btn-primary" type="submit">Create Match</button>
+            </form>
+            <div id="matches-list" class="resource-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

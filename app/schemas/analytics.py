@@ -129,12 +129,9 @@ class PlayerImpactResponse(BaseModel):
 
 class ClutchImpactContribution(BaseModel):
     match_id: int
-    minute: int
     event_type: str
-    base_value: float
-    minute_weight: float
-    game_state_weight: float
-    opponent_strength_weight: float
+    weight: float
+    points_awarded: int
     contribution: float
     reason: str
 

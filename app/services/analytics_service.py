@@ -206,11 +206,6 @@ class AnalyticsService:
     def get_clutch_impact(self, db: Session, season: str | None = None, limit: int = 20) -> ClutchImpactResponse:
         events = self.repository.list_events(db=db, season=season)
         matches = self.repository.list_matches(db=db, season=season)
-        teams = self.repository.list_all_teams(db=db)
-
-        team_ids = {team.id for team in teams}
-        team_ratings = calculate_team_strength(matches=matches, team_ids=team_ids)
-        rating_by_team = {team_id: values["rating"] for team_id, values in team_ratings.items()}
         match_by_id = {match.id: match for match in matches}
 
         contexts: list[ClutchEventContext] = []
@@ -222,18 +217,16 @@ class AnalyticsService:
             if event.team_id == match.home_team_id:
                 goals_for = match.home_score
                 goals_against = match.away_score
-                opponent_team_id = match.away_team_id
             else:
                 goals_for = match.away_score
                 goals_against = match.home_score
-                opponent_team_id = match.home_team_id
 
             if goals_for < goals_against:
-                game_state = "losing"
+                points_awarded = 0
             elif goals_for == goals_against:
-                game_state = "drawing"
+                points_awarded = 1
             else:
-                game_state = "winning"
+                points_awarded = 3
 
             contexts.append(
                 ClutchEventContext(
@@ -242,12 +235,11 @@ class AnalyticsService:
                     match_id=event.match_id,
                     minute=event.minute,
                     event_type=event.event_type,
-                    opponent_team_id=opponent_team_id,
-                    game_state=game_state,
+                    points_awarded=points_awarded,
                 )
             )
 
-        ranked = calculate_clutch_impact(event_contexts=contexts, team_ratings=rating_by_team)[:limit]
+        ranked = calculate_clutch_impact(event_contexts=contexts)[:limit]
 
         player_ids = {row["player_id"] for row in ranked}
         team_ids = {row["team_id"] for row in ranked}
@@ -270,9 +262,9 @@ class AnalyticsService:
             season=season,
             events_considered=len(events),
             methodology=(
-                "Score = base_event_value * minute_weight * game_state_weight * opponent_strength_weight. "
-                "For FPL fixture-history data, minute uses minutes played as a late-involvement proxy because "
-                "exact incident timestamps are not available from the source feed."
+                "Clutch score is based on points won from goal and assist contributions only. "
+                "Goals carry full weight and assists carry reduced weight, with each player's share "
+                "taken from the team's final points in that match."
             ),
             players=rows,
             metadata=self._metadata(),
