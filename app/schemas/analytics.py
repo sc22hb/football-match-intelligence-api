@@ -73,6 +73,22 @@ class TopScorersResponse(BaseModel):
     metadata: AnalyticsMetadata
 
 
+class MostAssistsRow(BaseModel):
+    rank: int
+    player_id: int
+    player_name: str
+    team_id: int
+    team_name: str
+    assists: int
+
+
+class MostAssistsResponse(BaseModel):
+    season: str | None
+    events_considered: int
+    most_assists: list[MostAssistsRow]
+    metadata: AnalyticsMetadata
+
+
 class TeamStrengthRow(BaseModel):
     rank: int
     team_id: int
@@ -98,6 +114,7 @@ class PlayerImpactRow(BaseModel):
     goals: int
     assists: int
     shots_on_target: int
+    saves: int
     yellow_cards: int
     red_cards: int
     impact_score: float

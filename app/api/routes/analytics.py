@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.schemas.analytics import (
     ClutchImpactResponse,
     LeagueTableResponse,
+    MostAssistsResponse,
     PlayerImpactResponse,
     TeamFormResponse,
     TeamStrengthResponse,
@@ -58,6 +59,15 @@ def get_top_scorers(
     db: Session = Depends(get_db),
 ) -> TopScorersResponse:
     return service.get_top_scorers(db=db, season=season, limit=limit)
+
+
+@router.get("/most-assists", response_model=MostAssistsResponse)
+def get_most_assists(
+    season: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> MostAssistsResponse:
+    return service.get_most_assists(db=db, season=season, limit=limit)
 
 
 @router.get("/player-impact", response_model=PlayerImpactResponse)

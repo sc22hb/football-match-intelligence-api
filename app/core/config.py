@@ -11,9 +11,9 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/football_api"
     )
-    data_source: str = "Kaggle"
-    dataset_name: str = "Football Events Dataset"
-    dataset_version: str = "secareanualin-public"
+    data_source: str = "Fantasy Premier League API"
+    dataset_name: str = "Premier League 2025/26"
+    dataset_version: str = "fpl-element-summary-live"
     api_key: str = "dev-api-key"
     rate_limit_window_seconds: int = 60
     rate_limit_max_requests: int = 1000

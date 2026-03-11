@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from app.analytics.clutch_impact import ClutchEventContext, calculate_clutch_impact
 from app.analytics.player_impact import calculate_player_impact
 from app.analytics.league_table import calculate_league_table
+from app.analytics.most_assists import calculate_most_assists
 from app.analytics.team_strength import calculate_team_strength
 from app.analytics.top_scorers import calculate_top_scorers
 from sqlalchemy.orm import Session
@@ -17,6 +18,7 @@ from app.schemas.analytics import (
     AnalyticsMetadata,
     ClutchImpactResponse,
     LeagueTableResponse,
+    MostAssistsResponse,
     PlayerImpactResponse,
     TeamFormResponse,
     TeamStrengthResponse,
@@ -145,6 +147,34 @@ class AnalyticsService:
             metadata=self._metadata(),
         )
 
+    def get_most_assists(self, db: Session, season: str | None = None, limit: int = 10) -> MostAssistsResponse:
+        assist_events = self.repository.list_assist_events(db=db, season=season)
+        ranked = calculate_most_assists(events=assist_events)[:limit]
+
+        player_ids = {row["player_id"] for row in ranked}
+        team_ids = {row["team_id"] for row in ranked}
+        players = self.repository.list_players_by_ids(db=db, player_ids=player_ids)
+        teams = self.repository.list_teams_by_ids(db=db, team_ids=team_ids)
+
+        player_names = {player.id: player.name for player in players}
+        team_names = {team.id: team.name for team in teams}
+
+        rows = [
+            {
+                **row,
+                "player_name": player_names.get(row["player_id"], f"player-{row['player_id']}"),
+                "team_name": team_names.get(row["team_id"], f"team-{row['team_id']}"),
+            }
+            for row in ranked
+        ]
+
+        return MostAssistsResponse(
+            season=season,
+            events_considered=len(assist_events),
+            most_assists=rows,
+            metadata=self._metadata(),
+        )
+
     def get_player_impact(self, db: Session, season: str | None = None, limit: int = 20) -> PlayerImpactResponse:
         events = self.repository.list_events(db=db, season=season)
         ranked = calculate_player_impact(events=events)[:limit]
@@ -241,7 +271,8 @@ class AnalyticsService:
             events_considered=len(events),
             methodology=(
                 "Score = base_event_value * minute_weight * game_state_weight * opponent_strength_weight. "
-                "Weights emphasize late minutes, difficult game state, and stronger opponents."
+                "For FPL fixture-history data, minute uses minutes played as a late-involvement proxy because "
+                "exact incident timestamps are not available from the source feed."
             ),
             players=rows,
             metadata=self._metadata(),

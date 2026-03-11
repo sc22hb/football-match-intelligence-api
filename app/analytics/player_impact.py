@@ -21,6 +21,7 @@ def calculate_player_impact(events: list[Event]) -> list[dict[str, float]]:
                 "goals": 0,
                 "assists": 0,
                 "shots_on_target": 0,
+                "saves": 0,
                 "yellow_cards": 0,
                 "red_cards": 0,
             },
@@ -33,6 +34,8 @@ def calculate_player_impact(events: list[Event]) -> list[dict[str, float]]:
             row["assists"] += 1
         elif event_type in {"shot_on_target", "shotontarget"}:
             row["shots_on_target"] += 1
+        elif event_type == "save":
+            row["saves"] += 1
         elif event_type == "yellow_card":
             row["yellow_cards"] += 1
         elif event_type == "red_card":
@@ -40,12 +43,14 @@ def calculate_player_impact(events: list[Event]) -> list[dict[str, float]]:
 
     rows = list(metrics.values())
     for row in rows:
-        weighted_goals = row["goals"] * 5
-        weighted_assists = row["assists"] * 3
-        weighted_shots = row["shots_on_target"] * 1
-        impact_score = (weighted_goals * weighted_assists * weighted_shots) - (
-            row["yellow_cards"] * 0.5
-        ) - (row["red_cards"] * 2)
+        impact_score = (
+            (row["goals"] * 5)
+            + (row["assists"] * 3)
+            + (row["shots_on_target"] * 1)
+            + (row["saves"] * 0.2)
+            - (row["yellow_cards"] * 0.5)
+            - (row["red_cards"] * 2)
+        )
         row["impact_score"] = round(impact_score, 2)
 
     rows.sort(key=lambda r: (-r["impact_score"], r["player_id"]))
