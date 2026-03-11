@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.player import PlayerCreate, PlayerListResponse, PlayerRead, PlayerUpdate
 from app.services.errors import ConflictError, NotFoundError
@@ -18,7 +19,11 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
 
 
 @router.post("", response_model=PlayerRead, status_code=status.HTTP_201_CREATED)
-def create_player(payload: PlayerCreate, db: Session = Depends(get_db)) -> PlayerRead:
+def create_player(
+    payload: PlayerCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> PlayerRead:
     try:
         player = service.create_player(db=db, payload=payload)
     except NotFoundError as exc:
@@ -68,6 +73,7 @@ def update_player(
     player_id: int,
     payload: PlayerUpdate,
     db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
 ) -> PlayerRead:
     try:
         player = service.update_player(db=db, player_id=player_id, payload=payload)
@@ -88,7 +94,11 @@ def update_player(
 
 
 @router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
-def delete_player(player_id: int, db: Session = Depends(get_db)) -> Response:
+def delete_player(
+    player_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> Response:
     try:
         service.delete_player(db=db, player_id=player_id)
     except NotFoundError as exc:

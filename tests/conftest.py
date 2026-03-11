@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
+from app.core.security import reset_rate_limiter_state
 from app.db.session import get_db
 from app.main import app
 
@@ -26,6 +27,7 @@ TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, 
 def client() -> Generator[TestClient, None, None]:
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    reset_rate_limiter_state()
 
     def override_get_db() -> Generator[Session, None, None]:
         db = TestSessionLocal()
@@ -37,6 +39,9 @@ def client() -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_db] = override_get_db
 
     with TestClient(app) as test_client:
+        # Tests use a known API key for write endpoints.
+        test_client.headers.update({"X-API-Key": "dev-api-key"})
         yield test_client
 
+    reset_rate_limiter_state()
     app.dependency_overrides.clear()

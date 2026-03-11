@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     data_source: str = "Kaggle"
     dataset_name: str = "Football Events Dataset"
     dataset_version: str = "secareanualin-public"
+    api_key: str = "dev-api-key"
+    rate_limit_window_seconds: int = 60
+    rate_limit_max_requests: int = 1000
 
     model_config = SettingsConfigDict(
         env_file=".env",

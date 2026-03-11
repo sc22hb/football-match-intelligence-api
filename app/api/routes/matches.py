@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.match import MatchCreate, MatchListResponse, MatchRead, MatchUpdate
 from app.services.errors import NotFoundError, ServiceValidationError
@@ -18,7 +19,11 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
 
 
 @router.post("", response_model=MatchRead, status_code=status.HTTP_201_CREATED)
-def create_match(payload: MatchCreate, db: Session = Depends(get_db)) -> MatchRead:
+def create_match(
+    payload: MatchCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> MatchRead:
     try:
         match = service.create_match(db=db, payload=payload)
     except NotFoundError as exc:
@@ -64,7 +69,12 @@ def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchRead:
 
 
 @router.put("/{match_id}", response_model=MatchRead)
-def update_match(match_id: int, payload: MatchUpdate, db: Session = Depends(get_db)) -> MatchRead:
+def update_match(
+    match_id: int,
+    payload: MatchUpdate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> MatchRead:
     try:
         match = service.update_match(db=db, match_id=match_id, payload=payload)
     except NotFoundError as exc:
@@ -84,7 +94,11 @@ def update_match(match_id: int, payload: MatchUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{match_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
-def delete_match(match_id: int, db: Session = Depends(get_db)) -> Response:
+def delete_match(
+    match_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> Response:
     try:
         service.delete_match(db=db, match_id=match_id)
     except NotFoundError as exc:

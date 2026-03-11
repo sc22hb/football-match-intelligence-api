@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.event import EventCreate, EventListResponse, EventRead
 from app.services.errors import NotFoundError, ServiceValidationError
@@ -18,7 +19,11 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
 
 
 @router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
-def create_event(payload: EventCreate, db: Session = Depends(get_db)) -> EventRead:
+def create_event(
+    payload: EventCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> EventRead:
     try:
         event = service.create_event(db=db, payload=payload)
     except NotFoundError as exc:

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.team import TeamCreate, TeamListResponse, TeamRead, TeamUpdate
 from app.services.errors import ConflictError, NotFoundError
@@ -18,7 +19,11 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
 
 
 @router.post("", response_model=TeamRead, status_code=status.HTTP_201_CREATED)
-def create_team(payload: TeamCreate, db: Session = Depends(get_db)) -> TeamRead:
+def create_team(
+    payload: TeamCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> TeamRead:
     try:
         team = service.create_team(db=db, payload=payload)
     except ConflictError as exc:
@@ -59,7 +64,12 @@ def get_team(team_id: int, db: Session = Depends(get_db)) -> TeamRead:
 
 
 @router.put("/{team_id}", response_model=TeamRead)
-def update_team(team_id: int, payload: TeamUpdate, db: Session = Depends(get_db)) -> TeamRead:
+def update_team(
+    team_id: int,
+    payload: TeamUpdate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> TeamRead:
     try:
         team = service.update_team(db=db, team_id=team_id, payload=payload)
     except NotFoundError as exc:
@@ -77,7 +87,11 @@ def update_team(team_id: int, payload: TeamUpdate, db: Session = Depends(get_db)
 
 
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
-def delete_team(team_id: int, db: Session = Depends(get_db)) -> Response:
+def delete_team(
+    team_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_write_access),
+) -> Response:
     try:
         service.delete_team(db=db, team_id=team_id)
     except NotFoundError as exc:
