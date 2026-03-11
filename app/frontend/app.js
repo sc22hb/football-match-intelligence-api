@@ -2,6 +2,8 @@ const state = {
   teams: [],
   players: [],
   matches: [],
+  fixturePredictions: [],
+  fixturePredictionPage: 0,
 };
 
 /* ===== Club badge images ===== */
@@ -255,6 +257,97 @@ function renderMetricList(target, rows, formatter) {
   document.querySelector(target).innerHTML = `<div class="metric-list">${rows.map(formatter).join("")}</div>`;
 }
 
+function fixturePredictionGroups() {
+  const groups = [];
+  let current = [];
+  let currentDate = null;
+
+  for (const row of state.fixturePredictions) {
+    if (currentDate === null) {
+      currentDate = row.fixture_date;
+    }
+    if (row.fixture_date !== currentDate && current.length >= 8) {
+      groups.push(current);
+      current = [];
+      currentDate = row.fixture_date;
+    }
+    current.push(row);
+  }
+  if (current.length) {
+    groups.push(current);
+  }
+  return groups;
+}
+
+function renderFixturePredictions() {
+  const groups = fixturePredictionGroups();
+  const meta = document.querySelector("#fixture-predictions-meta");
+
+  if (!groups.length) {
+    meta.textContent = "No upcoming fixtures found for the selected season.";
+    renderEmpty("#fixture-predictions", "No upcoming fixtures found for that season.");
+    return;
+  }
+
+  if (state.fixturePredictionPage >= groups.length) {
+    state.fixturePredictionPage = groups.length - 1;
+  }
+  if (state.fixturePredictionPage < 0) {
+    state.fixturePredictionPage = 0;
+  }
+
+  const currentGroup = groups[state.fixturePredictionPage];
+  const firstDate = currentGroup[0]?.fixture_date || "";
+  const lastDate = currentGroup[currentGroup.length - 1]?.fixture_date || "";
+  meta.textContent = `Fixture block ${state.fixturePredictionPage + 1} of ${groups.length} • ${firstDate}${lastDate !== firstDate ? ` to ${lastDate}` : ""}`;
+  document.querySelector("#prediction-prev").disabled = state.fixturePredictionPage === 0;
+  document.querySelector("#prediction-next").disabled = state.fixturePredictionPage >= groups.length - 1;
+
+  document.querySelector("#fixture-predictions").innerHTML = `
+    <div class="prediction-list">
+      ${currentGroup.map((row) => `
+        <div class="prediction-row">
+          <div class="prediction-date">${row.fixture_date}</div>
+          <div class="prediction-match">
+            <div class="prediction-teams">
+              <div class="prediction-home"><span>${row.home_team_name}</span> ${badgeHTML(row.home_team_name, true)}</div>
+              <div class="prediction-vs">vs</div>
+              <div class="prediction-away">${badgeHTML(row.away_team_name, true)} <span>${row.away_team_name}</span></div>
+            </div>
+            <div class="prediction-detail">
+              <div class="prediction-xg">
+                <div class="prediction-xg-label">Expected Goals</div>
+                <div class="prediction-xg-scoreline">
+                  <div class="prediction-xg-value">${row.predicted_home_goals}</div>
+                  <div class="prediction-xg-dash">-</div>
+                  <div class="prediction-xg-value">${row.predicted_away_goals}</div>
+                </div>
+              </div>
+              <span class="prediction-explanation muted">${row.explanation}</span>
+            </div>
+          </div>
+          <div class="prediction-probs">
+            <div class="prob-bar">
+              <div class="prob-bar-header">
+                <span>Win Probability</span>
+                <span>${Math.max(row.home_win_probability, row.draw_probability, row.away_win_probability) === row.home_win_probability ? row.home_team_name : Math.max(row.home_win_probability, row.draw_probability, row.away_win_probability) === row.away_win_probability ? row.away_team_name : "Draw"} edge</span>
+              </div>
+              <div class="prob-bar-track">
+                <span class="prob-bar-segment prob-home" style="width:${(row.home_win_probability * 100).toFixed(1)}%"></span>
+                <span class="prob-bar-segment prob-draw" style="width:${(row.draw_probability * 100).toFixed(1)}%"></span>
+                <span class="prob-bar-segment prob-away" style="width:${(row.away_win_probability * 100).toFixed(1)}%"></span>
+              </div>
+              <div class="prob-legend">
+                <span class="prob-legend-item"><span class="prob-dot prob-home"></span>Home ${(row.home_win_probability * 100).toFixed(0)}%</span>
+                <span class="prob-legend-item"><span class="prob-dot prob-draw"></span>Draw ${(row.draw_probability * 100).toFixed(0)}%</span>
+                <span class="prob-legend-item"><span class="prob-dot prob-away"></span>Away ${(row.away_win_probability * 100).toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>`).join("")}
+    </div>`;
+}
+
 /* ===== Analytics ===== */
 
 async function loadAnalytics() {
@@ -263,14 +356,16 @@ async function loadAnalytics() {
   showLoading("#most-assists");
   showLoading("#player-impact");
   showLoading("#clutch-impact");
+  showLoading("#fixture-predictions", 4);
 
   const season = encodeURIComponent(getSeason());
-  const [league, scorers, assists, impact, clutch] = await Promise.all([
+  const [league, scorers, assists, impact, clutch, predictions] = await Promise.all([
     apiFetch(`/analytics/league-table?season=${season}`),
     apiFetch(`/analytics/top-scorers?season=${season}&limit=8`),
     apiFetch(`/analytics/most-assists?season=${season}&limit=8`),
     apiFetch(`/analytics/player-impact?season=${season}&limit=8`),
     apiFetch(`/analytics/clutch-impact?season=${season}&limit=8`),
+    apiFetch(`/analytics/fixture-predictions?season=${season}&limit=100`),
   ]);
 
   /* League Table */
@@ -353,6 +448,9 @@ async function loadAnalytics() {
       </div>
       <span class="metric-value">${r.clutch_impact_score}</span>
     </div>`);
+
+  state.fixturePredictions = predictions.predictions || [];
+  renderFixturePredictions();
 }
 
 /* ===== Resources ===== */
@@ -464,6 +562,14 @@ function bindEvents() {
   document.querySelectorAll("[data-analytics]").forEach((btn) => btn.addEventListener("click", loadAnalytics));
   ["#team-form", "#player-form", "#match-form"].forEach((s) => document.querySelector(s).addEventListener("submit", handleCreate));
   ["#reload-teams", "#reload-players", "#reload-matches"].forEach((s) => document.querySelector(s).addEventListener("click", loadResources));
+  document.querySelector("#prediction-prev").addEventListener("click", () => {
+    state.fixturePredictionPage -= 1;
+    renderFixturePredictions();
+  });
+  document.querySelector("#prediction-next").addEventListener("click", () => {
+    state.fixturePredictionPage += 1;
+    renderFixturePredictions();
+  });
 
   document.body.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");

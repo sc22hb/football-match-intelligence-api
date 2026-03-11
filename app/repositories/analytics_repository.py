@@ -4,6 +4,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.event import Event
+from app.models.fixture import Fixture
 from app.models.match import Match
 from app.models.player import Player
 from app.models.team import Team
@@ -67,4 +68,10 @@ class AnalyticsRepository:
         stmt: Select[tuple[Event]] = select(Event).join(Match, Match.id == Event.match_id).order_by(Event.id.asc())
         if season is not None:
             stmt = stmt.where(Match.season == season)
+        return list(db.execute(stmt).scalars().all())
+
+    def list_fixtures(self, db: Session, season: str | None = None) -> list[Fixture]:
+        stmt: Select[tuple[Fixture]] = select(Fixture).order_by(Fixture.fixture_date.asc(), Fixture.id.asc())
+        if season is not None:
+            stmt = stmt.where(Fixture.season == season)
         return list(db.execute(stmt).scalars().all())

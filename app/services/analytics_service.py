@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from app.analytics.clutch_impact import ClutchEventContext, calculate_clutch_impact
+from app.analytics.fixture_predictions import predict_fixture
 from app.analytics.player_impact import calculate_player_impact
 from app.analytics.league_table import calculate_league_table
 from app.analytics.most_assists import calculate_most_assists
@@ -17,6 +18,7 @@ from app.repositories.team_repository import TeamRepository
 from app.schemas.analytics import (
     AnalyticsMetadata,
     ClutchImpactResponse,
+    FixturePredictionsResponse,
     LeagueTableResponse,
     MostAssistsResponse,
     PlayerImpactResponse,
@@ -172,6 +174,47 @@ class AnalyticsService:
             season=season,
             events_considered=len(assist_events),
             most_assists=rows,
+            metadata=self._metadata(),
+        )
+
+    def get_fixture_predictions(
+        self,
+        db: Session,
+        season: str | None = None,
+        limit: int = 20,
+    ) -> FixturePredictionsResponse:
+        fixtures = self.repository.list_fixtures(db=db, season=season)[:limit]
+        matches = self.repository.list_matches(db=db, season=season)
+        teams = self.repository.list_all_teams(db=db)
+
+        team_ids = {team.id for team in teams}
+        team_names = {team.id: team.name for team in teams}
+        ratings = calculate_team_strength(matches=matches, team_ids=team_ids)
+        rating_by_team = {team_id: values["rating"] for team_id, values in ratings.items()}
+        recent_matches_by_team = {
+            team.id: self.repository.list_recent_team_matches(db=db, team_id=team.id, limit=5)
+            for team in teams
+        }
+
+        rows = []
+        for fixture in fixtures:
+            prediction = predict_fixture(
+                fixture=fixture,
+                ratings=rating_by_team,
+                recent_matches_by_team=recent_matches_by_team,
+            )
+            rows.append(
+                {
+                    **prediction,
+                    "home_team_name": team_names.get(fixture.home_team_id, f"team-{fixture.home_team_id}"),
+                    "away_team_name": team_names.get(fixture.away_team_id, f"team-{fixture.away_team_id}"),
+                }
+            )
+
+        return FixturePredictionsResponse(
+            season=season,
+            fixtures_considered=len(rows),
+            predictions=rows,
             metadata=self._metadata(),
         )
 

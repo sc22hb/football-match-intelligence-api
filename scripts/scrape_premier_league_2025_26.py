@@ -241,6 +241,36 @@ def build_matches(
     return match_rows, match_by_fixture_id, fixtures_by_gameweek
 
 
+def build_fixtures(
+    fixtures: list[dict[str, Any]],
+    team_name_by_id: dict[int, str],
+    season: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for fixture in fixtures:
+        if fixture.get("finished"):
+            continue
+
+        home_team = team_name_by_id.get(fixture["team_h"])
+        away_team = team_name_by_id.get(fixture["team_a"])
+        kickoff = fixture.get("kickoff_time") or ""
+        fixture_date = kickoff[:10] if kickoff else ""
+        if not home_team or not away_team or not fixture_date:
+            continue
+
+        rows.append(
+            {
+                "fixture_date": fixture_date,
+                "season": season,
+                "home_team": home_team,
+                "away_team": away_team,
+            }
+        )
+
+    rows.sort(key=lambda row: (row["fixture_date"], row["home_team"], row["away_team"]))
+    return rows
+
+
 def build_events(
     player_ids: list[int],
     match_by_fixture_id: dict[int, dict[str, Any]],
@@ -342,6 +372,18 @@ def main() -> int:
         ["match_date", "season", "home_team", "away_team", "home_score", "away_score"],
     )
 
+    print("Building fixtures.csv...")
+    fixture_rows = build_fixtures(
+        fixtures=fixtures,
+        team_name_by_id=team_name_by_id,
+        season=args.season,
+    )
+    write_csv(
+        out_dir / "fixtures.csv",
+        fixture_rows,
+        ["fixture_date", "season", "home_team", "away_team"],
+    )
+
     print("Building events.csv...")
     event_rows = build_events(
         player_ids=player_ids,
@@ -370,6 +412,7 @@ def main() -> int:
     print(f"teams.csv   -> {len(team_rows)} rows")
     print(f"players.csv -> {len(player_rows)} rows")
     print(f"matches.csv -> {len(match_rows)} rows")
+    print(f"fixtures.csv -> {len(fixture_rows)} rows")
     print(f"events.csv  -> {len(event_rows)} rows")
     print(f"Output dir  -> {out_dir}")
     return 0
