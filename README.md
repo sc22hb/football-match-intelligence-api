@@ -11,6 +11,7 @@ It delivers CRUD APIs on football domain models, SQL-backed persistence, advance
 - Validation/serialization: Pydantic
 - Testing: Pytest
 - Dataset integration: Fantasy Premier League API scrape for Premier League 2025/26
+- Frontend: lightweight HTML/CSS/JavaScript dashboard served by FastAPI at `/`
 
 ## Architecture
 
@@ -80,8 +81,11 @@ uvicorn app.main:app --reload
 
 Docs:
 
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
+- Local frontend: `http://127.0.0.1:8000/`
+- Local Swagger UI: `http://127.0.0.1:8000/docs`
+- Local ReDoc: `http://127.0.0.1:8000/redoc`
+- Live site: `https://football-match-intelligence-api.onrender.com`
+- Live Swagger UI: `https://football-match-intelligence-api.onrender.com/docs`
 
 ## Running Tests
 
@@ -161,6 +165,15 @@ Write endpoints also have in-memory rate limiting controlled by:
 - `RATE_LIMIT_WINDOW_SECONDS`
 - `RATE_LIMIT_MAX_REQUESTS`
 
+Swagger UI documents the `X-API-Key` security header and common write-route error responses including:
+
+- `401` missing API key
+- `403` invalid API key
+- `404` resource not found
+- `409` duplicate resource conflict
+- `422` validation or relationship error
+- `429` rate limit exceeded
+
 ### Player impact metric
 
 Implemented as:
@@ -222,40 +235,52 @@ python3 scripts/import_football_events.py --dataset-dir data/premier_league_2025
 
 Script behavior:
 
-- Parses CSV input (`teams`, `players`, `matches`, `events`)
+- Parses CSV input (`teams`, `players`, `matches`, `events`, optional `fixtures`)
 - Validates references between entities
 - Skips duplicates (idempotent re-runs)
 - Prints per-entity import statistics
 
 ## Render Deployment
 
-This repo now includes a Render blueprint at [`render.yaml`](/Users/haroonbostan/football-api-cwk/football-match-intelligence-api/render.yaml).
+This repo includes deployment support files for Render:
 
-It provisions:
+- [`render.yaml`](/Users/haroonbostan/football-api-cwk/football-match-intelligence-api/render.yaml)
+- [`scripts/render_start.sh`](/Users/haroonbostan/football-api-cwk/football-match-intelligence-api/scripts/render_start.sh)
 
-- one Python web service
-- one PostgreSQL database
-- automatic migrations on deploy
-- automatic import of `data/premier_league_2025_26`
+Recommended free-tier deployment flow:
 
-### Deploy steps
+1. Create a Render Postgres instance.
+2. Create a Render Web Service from this repository.
+3. Set the build command to:
 
-1. Push the repo to GitHub.
-2. In Render, choose `New +` -> `Blueprint`.
-3. Connect this repository.
-4. Review the generated services from `render.yaml`.
-5. Create the blueprint.
+```bash
+pip install ".[dev]"
+```
 
-Render will then:
+4. Set the start command to:
 
-- install dependencies with `pip install ".[dev]"`
+```bash
+bash scripts/render_start.sh
+```
+
+5. Add these environment variables in the Render Web Service:
+
+- `PYTHON_VERSION=3.11.11`
+- `ENVIRONMENT=production`
+- `DATABASE_URL=<Render Postgres External Database URL>`
+- `API_KEY=<generated or custom secret>`
+- `RATE_LIMIT_WINDOW_SECONDS=60`
+- `RATE_LIMIT_MAX_REQUESTS=30`
+
+The startup script will:
+
 - run `alembic upgrade head`
-- import the Premier League dataset
-- start the API with `uvicorn`
+- import `data/premier_league_2025_26`
+- start `uvicorn`
 
 ### Important environment variables
 
-These are configured by the blueprint:
+Required in production:
 
 - `DATABASE_URL`
 - `API_KEY`
@@ -271,6 +296,13 @@ These are configured by the blueprint:
 - Swagger UI is available at `/docs`.
 
 ## OpenAPI Export
+
+API documentation artifacts in the repository:
+
+- Live site: `https://football-match-intelligence-api.onrender.com`
+- Live Swagger UI: `https://football-match-intelligence-api.onrender.com/docs`
+- OpenAPI JSON: [`docs/openapi_export.json`](/Users/haroonbostan/football-api-cwk/football-match-intelligence-api/docs/openapi_export.json)
+- Swagger PDF: [`docs/Football Match Intelligence API - Swagger UI-Authorisation.pdf`](/Users/haroonbostan/football-api-cwk/football-match-intelligence-api/docs/Football%20Match%20Intelligence%20API%20-%20Swagger%20UI-Authorisation.pdf)
 
 OpenAPI JSON export command:
 
@@ -290,40 +322,6 @@ PDF conversion command (when a converter is available, e.g., `pandoc`):
 
 ```bash
 pandoc docs/openapi_export.json -o docs/openapi_export.pdf
-```
-
-## Oral Demo Script (Suggested)
-
-1. Start API
-
-```bash
-uvicorn app.main:app --reload
-```
-
-2. Health check
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-3. Create teams
-
-```bash
-curl -X POST http://127.0.0.1:8000/teams -H "Content-Type: application/json" -d '{"name":"Arsenal","league":"Premier League","country":"England"}'
-curl -X POST http://127.0.0.1:8000/teams -H "Content-Type: application/json" -d '{"name":"Chelsea","league":"Premier League","country":"England"}'
-```
-
-4. Create players and a match, then add events (Swagger UI is fastest for IDs)
-
-5. Show analytics
-
-```bash
-curl "http://127.0.0.1:8000/analytics/team-form/1"
-curl "http://127.0.0.1:8000/analytics/league-table"
-curl "http://127.0.0.1:8000/analytics/team-strength"
-curl "http://127.0.0.1:8000/analytics/top-scorers"
-curl "http://127.0.0.1:8000/analytics/most-assists"
-curl "http://127.0.0.1:8000/analytics/player-impact"
 ```
 
 ## References
