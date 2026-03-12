@@ -15,7 +15,10 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 app = FastAPI(
     title="Football Match Intelligence API",
     version="0.1.0",
-    description="Data-driven football analytics API",
+    description=(
+        "Data-driven football analytics API with CRUD endpoints, explainable analytics, "
+        "API-key protected write operations, and auto-generated OpenAPI documentation."
+    ),
 )
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")

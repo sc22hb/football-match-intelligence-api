@@ -3,6 +3,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.docs import (
+    AUTH_ERROR_RESPONSES,
+    INVALID_EVENT_RESPONSE,
+    MATCH_NOT_FOUND_RESPONSE,
+)
 from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.event import EventCreate, EventListResponse, EventRead
@@ -18,7 +23,18 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
     return {"error": {"code": code, "message": message}}
 
 
-@router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=EventRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create event",
+    description="Creates a new event row linked to a match, team, and player. Requires the `X-API-Key` header.",
+    responses={
+        404: MATCH_NOT_FOUND_RESPONSE,
+        422: INVALID_EVENT_RESPONSE,
+        **AUTH_ERROR_RESPONSES,
+    },
+)
 def create_event(
     payload: EventCreate,
     db: Session = Depends(get_db),
@@ -48,7 +64,12 @@ def create_event(
     return EventRead.model_validate(event)
 
 
-@router.get("", response_model=EventListResponse)
+@router.get(
+    "",
+    response_model=EventListResponse,
+    summary="List events",
+    description="Returns a paginated list of events.",
+)
 def list_events(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),

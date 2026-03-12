@@ -11,7 +11,12 @@ router = APIRouter(prefix="/fixtures", tags=["fixtures"])
 service = FixtureService()
 
 
-@router.get("", response_model=FixtureListResponse)
+@router.get(
+    "",
+    response_model=FixtureListResponse,
+    summary="List upcoming fixtures",
+    description="Returns a paginated list of upcoming fixtures, optionally filtered by season.",
+)
 def list_fixtures(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),

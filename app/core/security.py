@@ -6,12 +6,18 @@ from collections import defaultdict, deque
 from threading import Lock
 from time import time
 
-from fastapi import Header, HTTPException, Request, status
+from fastapi import HTTPException, Request, Security, status
+from fastapi.security import APIKeyHeader
 
 from app.core.config import get_settings
 
 _hits: defaultdict[str, deque[float]] = defaultdict(deque)
 _lock = Lock()
+api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    auto_error=False,
+    description="Required for all write operations (POST, PUT, DELETE).",
+)
 
 
 def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
@@ -23,7 +29,10 @@ def reset_rate_limiter_state() -> None:
         _hits.clear()
 
 
-def require_write_access(request: Request, x_api_key: str | None = Header(default=None)) -> None:
+def require_write_access(
+    request: Request,
+    x_api_key: str | None = Security(api_key_header),
+) -> None:
     settings = get_settings()
 
     if not x_api_key:

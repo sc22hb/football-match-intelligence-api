@@ -3,6 +3,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.api.docs import (
+    AUTH_ERROR_RESPONSES,
+    PLAYER_CONFLICT_RESPONSE,
+    PLAYER_NOT_FOUND_RESPONSE,
+    TEAM_NOT_FOUND_RESPONSE,
+)
 from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.player import PlayerCreate, PlayerListResponse, PlayerRead, PlayerUpdate
@@ -18,7 +24,14 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
     return {"error": {"code": code, "message": message}}
 
 
-@router.post("", response_model=PlayerRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=PlayerRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create player",
+    description="Creates a new player linked to an existing team. Requires the `X-API-Key` header.",
+    responses={404: TEAM_NOT_FOUND_RESPONSE, 409: PLAYER_CONFLICT_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def create_player(
     payload: PlayerCreate,
     db: Session = Depends(get_db),
@@ -40,7 +53,12 @@ def create_player(
     return PlayerRead.model_validate(player)
 
 
-@router.get("", response_model=PlayerListResponse)
+@router.get(
+    "",
+    response_model=PlayerListResponse,
+    summary="List players",
+    description="Returns a paginated list of players.",
+)
 def list_players(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
@@ -55,7 +73,13 @@ def list_players(
     )
 
 
-@router.get("/{player_id}", response_model=PlayerRead)
+@router.get(
+    "/{player_id}",
+    response_model=PlayerRead,
+    summary="Get player by id",
+    description="Returns a single player by numeric identifier.",
+    responses={404: PLAYER_NOT_FOUND_RESPONSE},
+)
 def get_player(player_id: int, db: Session = Depends(get_db)) -> PlayerRead:
     try:
         player = service.get_player(db=db, player_id=player_id)
@@ -68,7 +92,13 @@ def get_player(player_id: int, db: Session = Depends(get_db)) -> PlayerRead:
     return PlayerRead.model_validate(player)
 
 
-@router.put("/{player_id}", response_model=PlayerRead)
+@router.put(
+    "/{player_id}",
+    response_model=PlayerRead,
+    summary="Update player",
+    description="Updates an existing player. Requires the `X-API-Key` header.",
+    responses={404: PLAYER_NOT_FOUND_RESPONSE, 409: PLAYER_CONFLICT_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def update_player(
     player_id: int,
     payload: PlayerUpdate,
@@ -93,7 +123,14 @@ def update_player(
     return PlayerRead.model_validate(player)
 
 
-@router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.delete(
+    "/{player_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="Delete player",
+    description="Deletes a player by id. Requires the `X-API-Key` header.",
+    responses={404: PLAYER_NOT_FOUND_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def delete_player(
     player_id: int,
     db: Session = Depends(get_db),

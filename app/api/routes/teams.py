@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.api.docs import AUTH_ERROR_RESPONSES, TEAM_CONFLICT_RESPONSE, TEAM_NOT_FOUND_RESPONSE
 from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.team import TeamCreate, TeamListResponse, TeamRead, TeamUpdate
@@ -18,7 +19,14 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
     return {"error": {"code": code, "message": message}}
 
 
-@router.post("", response_model=TeamRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TeamRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create team",
+    description="Creates a new team. Requires the `X-API-Key` header.",
+    responses={409: TEAM_CONFLICT_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def create_team(
     payload: TeamCreate,
     db: Session = Depends(get_db),
@@ -35,7 +43,12 @@ def create_team(
     return TeamRead.model_validate(team)
 
 
-@router.get("", response_model=TeamListResponse)
+@router.get(
+    "",
+    response_model=TeamListResponse,
+    summary="List teams",
+    description="Returns a paginated list of teams.",
+)
 def list_teams(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
@@ -50,7 +63,13 @@ def list_teams(
     )
 
 
-@router.get("/{team_id}", response_model=TeamRead)
+@router.get(
+    "/{team_id}",
+    response_model=TeamRead,
+    summary="Get team by id",
+    description="Returns a single team by numeric identifier.",
+    responses={404: TEAM_NOT_FOUND_RESPONSE},
+)
 def get_team(team_id: int, db: Session = Depends(get_db)) -> TeamRead:
     try:
         team = service.get_team(db=db, team_id=team_id)
@@ -63,7 +82,13 @@ def get_team(team_id: int, db: Session = Depends(get_db)) -> TeamRead:
     return TeamRead.model_validate(team)
 
 
-@router.put("/{team_id}", response_model=TeamRead)
+@router.put(
+    "/{team_id}",
+    response_model=TeamRead,
+    summary="Update team",
+    description="Updates an existing team. Requires the `X-API-Key` header.",
+    responses={404: TEAM_NOT_FOUND_RESPONSE, 409: TEAM_CONFLICT_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def update_team(
     team_id: int,
     payload: TeamUpdate,
@@ -86,7 +111,14 @@ def update_team(
     return TeamRead.model_validate(team)
 
 
-@router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.delete(
+    "/{team_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="Delete team",
+    description="Deletes a team by id. Requires the `X-API-Key` header.",
+    responses={404: TEAM_NOT_FOUND_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def delete_team(
     team_id: int,
     db: Session = Depends(get_db),

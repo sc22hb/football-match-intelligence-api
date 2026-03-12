@@ -3,6 +3,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.api.docs import (
+    AUTH_ERROR_RESPONSES,
+    INVALID_MATCH_RESPONSE,
+    MATCH_NOT_FOUND_RESPONSE,
+    TEAM_NOT_FOUND_RESPONSE,
+)
 from app.core.security import require_write_access
 from app.db.session import get_db
 from app.schemas.match import MatchCreate, MatchListResponse, MatchRead, MatchUpdate
@@ -18,7 +24,14 @@ def _error_payload(code: str, message: str) -> dict[str, dict[str, str]]:
     return {"error": {"code": code, "message": message}}
 
 
-@router.post("", response_model=MatchRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=MatchRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create match",
+    description="Creates a finished match record. Requires the `X-API-Key` header.",
+    responses={404: TEAM_NOT_FOUND_RESPONSE, 422: INVALID_MATCH_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def create_match(
     payload: MatchCreate,
     db: Session = Depends(get_db),
@@ -40,7 +53,12 @@ def create_match(
     return MatchRead.model_validate(match)
 
 
-@router.get("", response_model=MatchListResponse)
+@router.get(
+    "",
+    response_model=MatchListResponse,
+    summary="List matches",
+    description="Returns a paginated list of match records.",
+)
 def list_matches(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
@@ -55,7 +73,13 @@ def list_matches(
     )
 
 
-@router.get("/{match_id}", response_model=MatchRead)
+@router.get(
+    "/{match_id}",
+    response_model=MatchRead,
+    summary="Get match by id",
+    description="Returns a single match by numeric identifier.",
+    responses={404: MATCH_NOT_FOUND_RESPONSE},
+)
 def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchRead:
     try:
         match = service.get_match(db=db, match_id=match_id)
@@ -68,7 +92,13 @@ def get_match(match_id: int, db: Session = Depends(get_db)) -> MatchRead:
     return MatchRead.model_validate(match)
 
 
-@router.put("/{match_id}", response_model=MatchRead)
+@router.put(
+    "/{match_id}",
+    response_model=MatchRead,
+    summary="Update match",
+    description="Updates an existing match. Requires the `X-API-Key` header.",
+    responses={404: MATCH_NOT_FOUND_RESPONSE, 422: INVALID_MATCH_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def update_match(
     match_id: int,
     payload: MatchUpdate,
@@ -93,7 +123,14 @@ def update_match(
     return MatchRead.model_validate(match)
 
 
-@router.delete("/{match_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.delete(
+    "/{match_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="Delete match",
+    description="Deletes a match by id. Requires the `X-API-Key` header.",
+    responses={404: MATCH_NOT_FOUND_RESPONSE, **AUTH_ERROR_RESPONSES},
+)
 def delete_match(
     match_id: int,
     db: Session = Depends(get_db),
